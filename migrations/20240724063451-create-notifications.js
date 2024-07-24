@@ -2,21 +2,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Groups", {
+    await queryInterface.createTable("Notifications", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      groupName: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      profilePhoto: {
-        type: Sequelize.STRING,
-      },
-      creatorId: {
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -26,42 +19,48 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-    });
-    await queryInterface.createTable("UserGroups", {
-      userId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "UserS",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-        primaryKey: true,
-      },
-      groupId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Groups",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-        primaryKey: true,
-      },
-      userType: {
+      type: {
         type: Sequelize.STRING(10),
         allowNull: false,
       },
+      feedId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Feeds",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      commentId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Comments",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      actroId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      message: {
+        type: Sequelize.STRING(50),
+        allowNull: false,
+      },
+      isRead: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -71,15 +70,8 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
-    await queryInterface.addConstraint("UserGroups", {
-      fields: ["userId", "groupId"],
-      type: "unique",
-      name: "unique_user_group",
-    });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeConstraint("UserGroups", "unique_user_group");
-    await queryInterface.dropTable("UserGroups");
-    await queryInterface.dropTable("Groups");
+    await queryInterface.dropTable("Notifications");
   },
 };

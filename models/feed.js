@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "feedId",
       });
       Feed.hasMany(models.Comments, { foreignKey: "feedId" });
+      Feed.hasMany(models.Notifications, { foreignKey: "feedId" });
     }
   }
   Feed.init(
