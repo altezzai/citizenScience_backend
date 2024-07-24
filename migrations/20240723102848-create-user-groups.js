@@ -25,6 +25,10 @@ module.exports = {
         onUpdate: "CASCADE",
         primaryKey: true,
       },
+      userType: {
+        type: Sequelize.STRING(10),
+        allowNull: false,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
