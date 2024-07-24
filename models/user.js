@@ -33,6 +33,12 @@ module.exports = (sequelize, DataTypes) => {
         through: models.userCommunity,
         foreignKey: "userId",
       });
+      User.hasMany(models.Notifications, {
+        foreignKey: "userId",
+      });
+      User.hasMany(models.Notifications, {
+        foreignKey: "actorId",
+      });
     }
   }
   User.init(

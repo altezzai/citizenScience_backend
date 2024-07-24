@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Comments.belongsTo(models.Feed, { foreignKey: "feedId" });
       Comments.belongsTo(models.User, { foreignKey: "userId" });
+      Comments.hasMany(models.Notifications, { foreignKey: "commentId" });
     }
   }
   Comments.init(
