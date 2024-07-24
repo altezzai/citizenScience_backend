@@ -9,6 +9,12 @@ module.exports = (sequelize, DataTypes) => {
       PersonalMessages.belongsTo(models.User, {
         foreignKey: "recipientId",
       });
+      PersonalMessages.hasMany(models.PersonalMessages, {
+        foreignKey: "replyMessageId",
+      });
+      PersonalMessages.hasOne(models.PersonalMessageStatus, {
+        foreignKey: "msgId",
+      });
     }
   }
   PersonalMessages.init(
@@ -16,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       senderId: DataTypes.INTEGER,
       recipientId: DataTypes.INTEGER,
       message: DataTypes.STRING,
-      isRead: DataTypes.BOOLEAN,
+      replyMessageId: DataTypes.INTEGER,
     },
     {
       sequelize,

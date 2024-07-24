@@ -13,6 +13,9 @@ module.exports = (sequelize, DataTypes) => {
       GroupMessages.hasMany(models.GroupMessages, {
         foreignKey: "replyMessageId",
       });
+      GroupMessages.hasMany(models.GroupMessageStatus, {
+        foreignKey: "msgId",
+      });
     }
   }
   GroupMessages.init(
@@ -25,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "GroupMessages",
+      timestamps: true,
     }
   );
   return GroupMessages;

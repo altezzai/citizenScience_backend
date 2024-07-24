@@ -12,7 +12,6 @@ module.exports = {
       groupName: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true,
       },
       profilePhoto: {
         type: Sequelize.STRING,
