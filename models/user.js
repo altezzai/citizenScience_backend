@@ -45,6 +45,9 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.PersonalMessages, {
         foreignKey: "recipientId",
       });
+      User.hasMany(models.GroupMessages, {
+        foreignKey: "senderId",
+      });
     }
   }
   User.init(
