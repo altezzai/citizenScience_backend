@@ -31,14 +31,17 @@ module.exports = {
       likeCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        defaultValue: 0,
       },
       commentCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        defaultValue: 0,
       },
       shareCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        defaultValue: 0,
       },
 
       createdAt: {
