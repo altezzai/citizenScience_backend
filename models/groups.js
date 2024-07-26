@@ -1,29 +1,57 @@
 "use strict";
-const { Model } = require("sequelize");
-module.exports = (sequelize, DataTypes) => {
-  class Groups extends Model {
-    static associate(models) {
-      Groups.belongsToMany(models.User, {
-        through: models.UserGroup,
-        foreignKey: "groupId",
-        otherKey: "userId",
-      });
-      Groups.hasMany(models.GroupMessages, {
-        foreignKey: groupId,
-      });
-    }
-  }
-  Groups.init(
-    {
-      groupName: DataTypes.STRING,
-      profilePhoto: DataTypes.STRING,
-      creatorId: DataTypes.INTEGER,
+const { Model, DataTypes } = require("sequelize");
+const sequelize = require("../config/connection");
+
+const Groups = sequelize.define(
+  "Groups",
+  {
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER,
     },
-    {
-      sequelize,
-      modelName: "Groups",
-      timestamps: true,
-    }
-  );
-  return Groups;
-};
+    groupName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    profilePhoto: {
+      type: DataTypes.STRING,
+    },
+    creatorId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    modelName: "Groups",
+    timestamps: true,
+  }
+);
+
+module.exports = Groups;
+
+// static associate(models) {
+//   Groups.belongsToMany(models.User, {
+//     through: models.UserGroup,
+//     foreignKey: "groupId",
+//     otherKey: "userId",
+//   });
+//   Groups.hasMany(models.GroupMessages, {
+//     foreignKey: groupId,
+//   });
+// }
