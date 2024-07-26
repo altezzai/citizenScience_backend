@@ -1,21 +1,45 @@
 "use strict";
-const { Model } = require("sequelize");
-module.exports = (sequelize, DataTypes) => {
-  class Followings extends Model {
-    static associate(models) {
-      // define association here
-    }
-  }
-  Followings.init(
-    {
-      userId: DataTypes.INTEGER,
-      followingId: DataTypes.INTEGER,
+const { Model, DataTypes } = require("sequelize");
+const sequelize = require("../config/connection");
+
+const Followings = sequelize.define(
+  "Followings",
+  {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      primaryKey: true,
     },
-    {
-      sequelize,
-      modelName: "Followings",
-      timestamps:true
-    }
-  );
-  return Followings;
-};
+    followingId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      primaryKey: true,
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    modelName: "Followings",
+    timestamps: true,
+  }
+);
+
+module.exports = Followings;

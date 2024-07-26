@@ -1,21 +1,45 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-  class Followers extends Model {
-   
-    static associate(models) {
-      // define association here
-    }
+"use strict";
+const { Model, DataTypes } = require("sequelize");
+const sequelize = require("../config/connection");
+
+const Followers = sequelize.define(
+  "Followers",
+  {
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      primaryKey: true,
+    },
+    followerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      primaryKey: true,
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    modelName: "Followers",
+    timestamps: true,
   }
-  Followers.init({
-    userId: DataTypes.INTEGER,
-    followerId: DataTypes.INTEGER
-  }, {
-    sequelize,
-    modelName: 'Followers',
-    timestamps:true
-  });
-  return Followers;
-};
+);
+
+module.exports = Followers;

@@ -22,6 +22,9 @@ module.exports = {
         type: Sequelize.STRING(20),
         allowNull: false,
       },
+      profilePhoto: {
+        type: Sequelize.STRING,
+      },
     });
   },
   async down(queryInterface, Sequelize) {
