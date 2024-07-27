@@ -126,7 +126,7 @@ const getLikes = async (req, res) => {
 };
 
 const addComment = async (req, res) => {
-  const { feedId, userId, comment } = req.body;
+  const { feedId, userId, comment, parentId } = req.body;
   const transaction = await sequelize.transaction();
   try {
     const feed = await Feed.findByPk(feedId, { transaction });
@@ -135,7 +135,7 @@ const addComment = async (req, res) => {
     }
 
     const newComment = await Comments.create(
-      { feedId, userId, comment },
+      { feedId, userId, comment, parentId: parentId || null },
       { transaction }
     );
     feed.commentCount += 1;
@@ -152,8 +152,29 @@ const getComments = async (req, res) => {
   const { feedId } = req.params;
   try {
     const comments = await Comments.findAll({
-      where: { feedId },
-      include: User,
+      where: { feedId, parentId: null },
+      include: [
+        {
+          model: Comments,
+          include: [
+            {
+              model: User,
+            },
+            {
+              model: Comments,
+              include: [
+                {
+                  model: User,
+                },
+                //if going deeper replies add
+              ],
+            },
+          ],
+        },
+        {
+          model: User,
+        },
+      ],
     });
     res.status(200).json(comments);
   } catch (error) {
