@@ -2,6 +2,8 @@
 const { Model, DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
 const Feed = require("./feed");
+const Like = require("./like");
+const Comments = require("./comments");
 
 const User = sequelize.define(
   "User",
@@ -38,16 +40,25 @@ const User = sequelize.define(
 User.hasMany(Feed, { foreignKey: "userId" });
 Feed.belongsTo(User, { foreignKey: "userId" });
 
+User.hasMany(Like, { foreignKey: "userId" });
+Like.belongsTo(User, { foreignKey: "userId" });
+User.belongsToMany(Feed, {
+  through: Like,
+  foreignKey: "userId",
+});
+Feed.belongsToMany(User, {
+  through: Like,
+  foreignKey: "feedId",
+});
+
+User.hasMany(Comments, { foreignKey: "userId" });
+Comments.belongsTo(User, { foreignKey: "userId" });
+
 module.exports = User;
 
 // class User extends Model {
 //   static associate(models) {
-//     User.hasMany(models.Feed, { foreignKey: "userId" });
-//     User.belongsToMany(models.Feed, {
-//       through: models.Like,
-//       foreignKey: "userId",
-//     });
-//     User.hasMany(models.Comments, { foreignKey: "userId" });
+
 //     User.belongsToMany(models.User, {
 //       through: models.Followers,
 //       foreignKey: "userId",

@@ -46,7 +46,5 @@ const Comments = sequelize.define("Comments", {
 module.exports = Comments;
 
 // static associate(models) {
-//   Comments.belongsTo(models.Feed, { foreignKey: "feedId" });
-//   Comments.belongsTo(models.User, { foreignKey: "userId" });
 //   Comments.hasMany(models.Notifications, { foreignKey: "commentId" });
 // }
