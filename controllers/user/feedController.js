@@ -41,6 +41,23 @@ const getFeeds = async (req, res) => {
   }
 };
 
+const getFeed = async (req, res) => {
+  const { feedId } = req.params;
+
+  try {
+    const feed = await Feed.findByPk(feedId, {
+      include: [User, Like, Comments],
+    });
+    if (!feed) {
+      return res.status(404).json({ message: "Feed not found" });
+    }
+    res.status(200).json(feed);
+  } catch (error) {
+    console.error("Error fetching feed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const updateFeed = async (req, res) => {
   const { id } = req.params;
   const { link, description, likeCount, commentCount, shareCount } = req.body;
@@ -251,6 +268,7 @@ const deleteComment = async (req, res) => {
 module.exports = {
   addFeed,
   getFeeds,
+  getFeed,
   updateFeed,
   deleteFeed,
   addLike,

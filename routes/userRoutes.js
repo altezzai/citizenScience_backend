@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post("/addFeed", feedController.addFeed);
 router.get("/feeds", feedController.getFeeds);
+router.get("/feed/:feedId", feedController.getFeed);
 router.post("/updateFeed/:id", feedController.updateFeed);
 router.post("/deleteFeed/:id", feedController.deleteFeed);
 router.post("/addLike", feedController.addLike);
