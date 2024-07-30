@@ -1,6 +1,7 @@
 "use strict";
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
+const { FOREIGNKEYS } = require("sequelize/lib/query-types");
 
 const Comments = sequelize.define("Comments", {
   id: {
@@ -33,6 +34,19 @@ const Comments = sequelize.define("Comments", {
     type: DataTypes.STRING(200),
     allowNull: false,
   },
+  parentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: "Comments",
+      key: "id",
+    },
+  },
+  likeCount: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
   createdAt: {
     allowNull: false,
     type: DataTypes.DATE,
@@ -43,10 +57,12 @@ const Comments = sequelize.define("Comments", {
   },
 });
 
+Comments.hasMany(Comments, { foreignKey: "parentId", as: "Replies" });
+Comments.belongsTo(Comments, { foreignKey: "parentId" });
+
+Comments.hasMany(Comments, { foreignKey: "parentId", as: "NestedReplies" });
 module.exports = Comments;
 
 // static associate(models) {
-//   Comments.belongsTo(models.Feed, { foreignKey: "feedId" });
-//   Comments.belongsTo(models.User, { foreignKey: "userId" });
 //   Comments.hasMany(models.Notifications, { foreignKey: "commentId" });
 // }

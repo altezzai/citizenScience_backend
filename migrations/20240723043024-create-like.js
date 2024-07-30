@@ -9,9 +9,20 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      feedId: {
+
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      feedId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
         references: {
           model: "Feeds",
           key: "id",
@@ -19,11 +30,11 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      userId: {
+      commentId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          model: "Users",
+          model: "Comments",
           key: "id",
         },
         onDelete: "CASCADE",
@@ -39,7 +50,7 @@ module.exports = {
       },
     });
     await queryInterface.addConstraint("Likes", {
-      fields: ["feedId", "userId"],
+      fields: ["userId", "feedId", "commentId"],
       type: "unique",
       name: "unique_post_user_like",
     });

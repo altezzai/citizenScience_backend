@@ -11,6 +11,17 @@ const Like = sequelize.define(
       primaryKey: true,
       type: DataTypes.INTEGER,
     },
+
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
     feedId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -21,11 +32,11 @@ const Like = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    userId: {
+    commentId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
-        model: "Users",
+        model: "Comments",
         key: "id",
       },
       onDelete: "CASCADE",

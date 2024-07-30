@@ -33,6 +33,21 @@ module.exports = {
         type: Sequelize.STRING(200),
         allowNull: false,
       },
+      parentId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Comments",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+      likeCount: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
