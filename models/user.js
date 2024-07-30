@@ -51,8 +51,11 @@ Feed.belongsToMany(User, {
   foreignKey: "feedId",
 });
 
-User.hasMany(Comments, { foreignKey: "userId" });
-Comments.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Comments, { foreignKey: "userId", as: "Comments" });
+Comments.belongsTo(User, { foreignKey: "userId", as: "CommentUser" });
+User.hasMany(Comments, { foreignKey: "userId", as: "NestedReplies" });
+Comments.belongsTo(User, { foreignKey: "userId", as: "ReplyUser" });
+Comments.belongsTo(User, { foreignKey: "userId", as: "NestedReplyUser" });
 
 module.exports = User;
 

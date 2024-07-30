@@ -57,9 +57,10 @@ const Comments = sequelize.define("Comments", {
   },
 });
 
-Comments.hasMany(Comments, { foreignKey: "parentId" });
+Comments.hasMany(Comments, { foreignKey: "parentId", as: "Replies" });
 Comments.belongsTo(Comments, { foreignKey: "parentId" });
 
+Comments.hasMany(Comments, { foreignKey: "parentId", as: "NestedReplies" });
 module.exports = Comments;
 
 // static associate(models) {

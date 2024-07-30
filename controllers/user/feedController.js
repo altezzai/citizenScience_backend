@@ -79,26 +79,40 @@ const deleteFeed = async (req, res) => {
 };
 
 const addLike = async (req, res) => {
-  const { userId, feedId } = req.body;
+  const { userId, feedId, commentId } = req.body;
   const transaction = await sequelize.transaction();
 
   try {
-    const feed = await Feed.findByPk(feedId, { transaction });
-    if (!Feed) {
-      throw new Error("Feed not Found");
+    let target;
+    if (feedId) {
+      target = await Feed.findByPk(feedId, { transaction });
+      if (!target) {
+        throw new Error("Feed not Found");
+      }
+    } else if (commentId) {
+      target = await Comments.findByPk(commentId, { transaction });
+      if (!target) {
+        throw new Error("Comment not Found");
+      }
+    } else {
+      throw new Error("Either feedId or commentId must be provided");
     }
+
     const existingLike = await Like.findOne({
-      where: { userId, feedId },
+      where: { userId, feedId: feedId || null, commentId: commentId || null },
       transaction,
     });
     if (existingLike) {
-      await Like.destroy({ where: { userId, feedId }, transaction });
-      feed.likeCount -= 1;
+      await Like.destroy({
+        where: { userId, feedId: feedId || null, commentId: commentId || null },
+        transaction,
+      });
+      target.likeCount -= 1;
     } else {
-      await Like.create({ userId, feedId }, { transaction });
-      feed.likeCount += 1;
+      await Like.create({ userId, feedId, commentId }, { transaction });
+      target.likeCount += 1;
     }
-    await feed.save({ transaction });
+    await target.save({ transaction });
     await transaction.commit();
     res
       .status(200)
@@ -111,11 +125,13 @@ const addLike = async (req, res) => {
 };
 
 const getLikes = async (req, res) => {
-  const { feedId } = req.params;
+  const { feedId, commentId } = req.query;
+  const feed = req.query.feedId || null;
+  const comment = req.query.commentId || null;
 
   try {
     const feedLikes = await Like.findAll({
-      where: { feedId },
+      where: { feedId: feed, commentId: comment },
       include: User,
     });
     res.status(200).json(feedLikes);
@@ -153,26 +169,37 @@ const getComments = async (req, res) => {
   try {
     const comments = await Comments.findAll({
       where: { feedId, parentId: null },
+      order: [["createdAt", "DESC"]],
+
       include: [
         {
+          model: User,
+          as: "CommentUser",
+        },
+        {
           model: Comments,
+          as: "Replies",
+          order: [["createdAt", "ASC"]],
+
           include: [
             {
               model: User,
+              as: "ReplyUser",
             },
             {
               model: Comments,
+              as: "NestedReplies",
+              order: [["createdAt", "ASC"]],
+
               include: [
                 {
                   model: User,
+                  as: "NestedReplyUser",
                 },
                 //if going deeper replies add
               ],
             },
           ],
-        },
-        {
-          model: User,
         },
       ],
     });
@@ -193,7 +220,7 @@ const updateComment = async (req, res) => {
       { where: { id } }
     );
     if (!updatedComment) {
-      res.status(404).json({ error: "Comment no updated" });
+      res.status(404).json({ error: "Comment not updated" });
     } else {
       const comment = await Comments.findByPk(id);
       res.status(200).json(comment);

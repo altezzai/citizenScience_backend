@@ -40,7 +40,7 @@ module.exports = {
           model: "Comments",
           key: "id",
         },
-        onDelete: "CASDCADE",
+        onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
       likeCount: {

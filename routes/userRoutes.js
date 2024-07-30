@@ -9,7 +9,7 @@ router.get("/feeds", feedController.getFeeds);
 router.post("/updateFeed/:id", feedController.updateFeed);
 router.post("/deleteFeed/:id", feedController.deleteFeed);
 router.post("/addLike", feedController.addLike);
-router.get("/likes/:feedId", feedController.getLikes);
+router.get("/likes", feedController.getLikes);
 router.post("/addComment", feedController.addComment);
 router.get("/comments/:feedId", feedController.getComments);
 router.post("/updateComment/:id", feedController.updateComment);
