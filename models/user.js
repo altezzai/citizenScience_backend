@@ -4,6 +4,7 @@ const sequelize = require("../config/connection");
 const Feed = require("./feed");
 const Like = require("./like");
 const Comments = require("./comments");
+const FeedMentions = require("./feedmentions");
 
 const User = sequelize.define(
   "User",
@@ -40,8 +41,24 @@ const User = sequelize.define(
 User.hasMany(Feed, { foreignKey: "userId" });
 Feed.belongsTo(User, { foreignKey: "userId" });
 
+User.hasMany(FeedMentions, { foreignKey: "userId" });
+FeedMentions.belongsTo(User, { foreignKey: "userId" });
+
+// User.belongsToMany(Feed, {
+//   through: FeedMentions,
+//   as: "MentionedFeeds",
+//   foreignKey: "userId",
+// });
+
+// Feed.belongsToMany(User, {
+//   through: FeedMentions,
+//   as: "FeedMentions",
+//   foreignKey: "feedId",
+// });
+
 User.hasMany(Like, { foreignKey: "userId" });
 Like.belongsTo(User, { foreignKey: "userId" });
+
 User.belongsToMany(Feed, {
   through: Like,
   foreignKey: "userId",

@@ -1,4 +1,7 @@
 "use strict";
+
+const { query } = require("express");
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -10,13 +13,13 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
       fileName: {
-        type: Sequelize.STRING(50),
+        type: Sequelize.STRING,
       },
       link: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.STRING,
       },
       description: {
-        type: Sequelize.STRING(200),
+        type: Sequelize.STRING(500),
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -53,6 +56,8 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable("Feeds");

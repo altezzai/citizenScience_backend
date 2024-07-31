@@ -3,6 +3,7 @@ const { Model, DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
 const Comments = require("./comments");
 const Like = require("./like");
+const FeedMentions = require("./feedmentions");
 
 const Feed = sequelize.define(
   "Feed",
@@ -64,6 +65,9 @@ const Feed = sequelize.define(
 );
 Feed.hasMany(Comments, { foreignKey: "feedId" });
 Comments.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(FeedMentions, { foreignKey: "feedId" });
+FeedMentions.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(Like, { foreignKey: "feedId" });
 Like.belongsTo(Feed, { foreignKey: "feedId" });

@@ -8,6 +8,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extend: true }));
 
+app.use("/uploads", express.static("uploads"));
+
 app.use("/users", userRoutes);
 
 const PORT = process.env.PORT || 3000;
