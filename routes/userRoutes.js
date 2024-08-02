@@ -16,5 +16,7 @@ router.post("/addComment", feedController.addComment);
 router.get("/comments", feedController.getComments);
 router.post("/updateComment/:id", feedController.updateComment);
 router.post("/deleteComment/:id", feedController.deleteComment);
+router.post("/saveFeed", feedController.saveFeed);
+router.get("/savedFeeds", feedController.getSavedFeeds);
 
 module.exports = router;

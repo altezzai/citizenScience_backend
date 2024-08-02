@@ -4,6 +4,9 @@ const sequelize = require("../config/connection");
 const Comments = require("./comments");
 const Like = require("./like");
 const FeedMentions = require("./feedmentions");
+const SavedFeeds = require("./savedfeeds");
+const PostHashtags = require("./posthashtags");
+const Hashtags = require("./hashtags");
 
 const Feed = sequelize.define(
   "Feed",
@@ -48,6 +51,16 @@ const Feed = sequelize.define(
       allowNull: false,
       defaultValue: 0,
     },
+    savedCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    viewsCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
 
     createdAt: {
       allowNull: false,
@@ -68,6 +81,20 @@ Comments.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(FeedMentions, { foreignKey: "feedId" });
 FeedMentions.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(SavedFeeds, { foreignKey: "feedId" });
+SavedFeeds.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(PostHashtags, { foreignKey: "feedId" });
+PostHashtags.belongsTo(Feed, { foreignKey: "feedId" });
+// Feed.belongsToMany(Hashtags, {
+//   through: PostHashtags,
+//   foreignKey: "feedId",
+// });
+// Hashtags.belongsToMany(Feed, {
+//   through: PostHashtags,
+//   foreignKey: "hashtagId",
+// });
 
 Feed.hasMany(Like, { foreignKey: "feedId" });
 Like.belongsTo(Feed, { foreignKey: "feedId" });
