@@ -102,7 +102,7 @@ const getFeeds = async (req, res) => {
         { model: User, attributes: ["id", "username", "profilePhoto"] },
         {
           model: FeedMentions,
-          attributes: [],
+          attributes: ["id"],
           include: [
             {
               model: User,
@@ -112,7 +112,7 @@ const getFeeds = async (req, res) => {
         },
         {
           model: PostHashtags,
-          attributes: [],
+          attributes: ["hashtagId"],
           include: [
             {
               model: Hashtags,
@@ -142,7 +142,7 @@ const getFeed = async (req, res) => {
         },
         {
           model: FeedMentions,
-          attributes: [],
+          attributes: ["id"],
           include: [
             {
               model: User,
@@ -150,9 +150,10 @@ const getFeed = async (req, res) => {
             },
           ],
         },
+
         {
           model: PostHashtags,
-          attributes: [],
+          attributes: ["hashtagId"],
           include: [
             {
               model: Hashtags,
@@ -449,6 +450,7 @@ const getComments = async (req, res) => {
         {
           model: FeedMentions,
           attributes: ["id"],
+          order: [["createdAt", "ASC"]],
           include: [
             {
               model: User,
@@ -469,6 +471,17 @@ const getComments = async (req, res) => {
               as: "ReplyUser",
             },
             {
+              model: FeedMentions,
+              attributes: ["id"],
+              order: [["createdAt", "ASC"]],
+              include: [
+                {
+                  model: User,
+                  attributes: ["id", "username", "profilePhoto"],
+                },
+              ],
+            },
+            {
               model: Comments,
               as: "NestedReplies",
               attributes: ["comment", "likeCount", "parentId"],
@@ -480,6 +493,17 @@ const getComments = async (req, res) => {
                   model: User,
                   as: "NestedReplyUser",
                   attributes: ["id", "username", "profilePhoto"],
+                },
+                {
+                  model: FeedMentions,
+                  attributes: ["id"],
+                  order: [["createdAt", "ASC"]],
+                  include: [
+                    {
+                      model: User,
+                      attributes: ["id", "username", "profilePhoto"],
+                    },
+                  ],
                 },
                 //if going deeper replies add
               ],
