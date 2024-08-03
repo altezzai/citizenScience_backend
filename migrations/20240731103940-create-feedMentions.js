@@ -1,50 +1,25 @@
 "use strict";
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Notifications", {
+    await queryInterface.createTable("FeedMentions", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
+
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "Users",
+          model: "UserS",
           key: "id",
         },
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
-      },
-      actroId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-      type: {
-        type: Sequelize.ENUM,
-        values: [
-          "like",
-          "comment",
-          "follow",
-          "mention",
-          "reply",
-          "follow request",
-          "custom",
-        ],
-        allowNull: false,
-      },
-      content: {
-        type: Sequelize.STRING(50),
-        allowNull: false,
       },
       feedId: {
         type: Sequelize.INTEGER,
@@ -67,19 +42,6 @@ module.exports = {
         onUpdate: "CASCADE",
       },
 
-      isRead: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
-      actionURL: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
-      priority: {
-        type: Sequelize.ENUM,
-        values: ["High", "Medium", "Low"],
-        allowNull: false,
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -89,8 +51,16 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addConstraint("FeedMentions", {
+      fields: ["feedId", "userId"],
+      type: "unique",
+      name: "unique_mention",
+    });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Notifications");
+    await queryInterface.removeConstraint("FeedMentions", "unique_mention");
+
+    await queryInterface.dropTable("FeedMentions");
   },
 };

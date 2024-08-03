@@ -4,23 +4,89 @@ const Feed = require("../../models/feed");
 const Like = require("../../models/like");
 const User = require("../../models/user");
 const Comments = require("../../models/comments");
+const FeedMentions = require("../../models/feedmentions");
+const upload = require("../../config/uploadConfig");
+const SavedFeeds = require("../../models/savedfeeds");
+const Hashtags = require("../../models/hashtags");
+const PostHashtags = require("../../models/posthashtags");
 
-async function addFeed(req, res) {
-  const { fileName, link, description, userId } = req.body;
+const addFeed = async (req, res) => {
+  const { link, description, userId, mentionIds, hashTags } = req.body;
+  const fileName = req.file ? req.file.filename : null;
+
+  let parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : [];
+  let parsedHashTags = Array.isArray(hashTags) ? hashTags : [];
+
+  //this is for the postman json string format
+  if (typeof mentionIds === "string") {
+    try {
+      parsedMentionIds = JSON.parse(mentionIds);
+    } catch (e) {
+      console.error("Error parsing mentionIds:", e);
+      parsedMentionIds = [];
+    }
+  }
+
+  if (typeof hashTags === "string") {
+    try {
+      parsedHashTags = JSON.parse(hashTags);
+    } catch (e) {
+      console.error("Error parsing hashTags:", e);
+      parsedHashTags = [];
+    }
+  }
+
+  const validHashTags = parsedHashTags.filter((tag) => tag.trim() !== "");
+
+  const transaction = await sequelize.transaction();
 
   try {
-    const newFeed = await Feed.create({
-      fileName,
-      link,
-      description,
-      userId,
-    });
+    const newFeed = await Feed.create(
+      {
+        fileName,
+        link,
+        description,
+        userId,
+      },
+      { transaction }
+    );
+    if (parsedMentionIds.length > 0) {
+      const feedMentions = parsedMentionIds.map((index) => ({
+        userId: index,
+        feedId: newFeed.id,
+      }));
+      await FeedMentions.bulkCreate(feedMentions, { transaction });
+    }
+
+    if (validHashTags.length > 0) {
+      const hashtagPromises = validHashTags.map(async (tag) => {
+        const [hashtag] = await Hashtags.findOrCreate({
+          where: { hashtag: tag },
+          defaults: { usageCount: 0 },
+          transaction,
+        });
+        await hashtag.increment("usageCount", { transaction });
+        return hashtag.id;
+      });
+
+      const hashtagIds = await Promise.all(hashtagPromises);
+
+      const postHashtags = hashtagIds.map((hashtagId) => ({
+        feedId: newFeed.id,
+        hashtagId: hashtagId,
+      }));
+      await PostHashtags.bulkCreate(postHashtags, { transaction });
+    }
+
+    await transaction.commit();
+
     res.status(201).json(newFeed);
   } catch (error) {
+    await transaction.rollback();
     console.error("Error creating feed:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 const getFeeds = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -32,7 +98,29 @@ const getFeeds = async (req, res) => {
       offset,
       limit,
       order: [["createdAt", "DESC"]],
-      include: User,
+      include: [
+        { model: User, attributes: ["id", "username", "profilePhoto"] },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username"],
+            },
+          ],
+        },
+        {
+          model: PostHashtags,
+          attributes: ["hashtagId"],
+          include: [
+            {
+              model: Hashtags,
+              attributes: ["hashtag"],
+            },
+          ],
+        },
+      ],
     });
     res.status(200).json(feeds);
   } catch (error) {
@@ -41,22 +129,179 @@ const getFeeds = async (req, res) => {
   }
 };
 
-const updateFeed = async (req, res) => {
-  const { id } = req.params;
-  const { link, description, likeCount, commentCount, shareCount } = req.body;
+const getFeed = async (req, res) => {
+  const { feedId } = req.params;
+  const page = parseInt(req.query.page) || 1;
 
   try {
-    const [updated] = await Feed.update(
-      { link, description, likeCount, commentCount, shareCount },
-      { where: { id } }
-    );
-    if (updated) {
-      const updateFeed = await Feed.findOne({ where: { id } });
-      res.status(200).json({ feed: updateFeed });
-    } else {
-      res.status(404).json({ error: "Feed not found" });
+    const feed = await Feed.findByPk(feedId, {
+      include: [
+        {
+          model: User,
+          attributes: ["username", "profilePhoto"],
+        },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username"],
+            },
+          ],
+        },
+
+        {
+          model: PostHashtags,
+          attributes: ["hashtagId"],
+          include: [
+            {
+              model: Hashtags,
+              attributes: ["hashtag"],
+            },
+          ],
+        },
+      ],
+    });
+    if (!feed) {
+      return res.status(404).json({ message: "Feed not found" });
     }
+    res.status(200).json(feed);
   } catch (error) {
+    console.error("Error fetching feed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const updateFeed = async (req, res) => {
+  const { id } = req.params;
+  const { link, description, mentionIds, hashTags } = req.body;
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    const feedUpdateFields = {};
+    if (link !== undefined) feedUpdateFields.link = link;
+    if (description !== undefined) feedUpdateFields.description = description;
+
+    const feedExist = await Feed.findByPk(id);
+    if (!feedExist) {
+      // throw new Error("Feed not found");
+      return res.status(404).json({ error: "Feed not found" });
+    }
+
+    if (Object.keys(feedUpdateFields).length > 0) {
+      const [updated] = await Feed.update(feedUpdateFields, {
+        where: { id },
+        transaction,
+      });
+      if (!updated) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Feed not found" });
+      }
+    }
+
+    if (mentionIds && Array.isArray(mentionIds)) {
+      const currentMentions = await FeedMentions.findAll({
+        where: { feedId: id },
+        transaction,
+      });
+
+      const currentMentionIds = currentMentions.map(
+        (mention) => mention.userId
+      );
+
+      const mentionsToRemove = currentMentionIds.filter(
+        (userId) => !mentionIds.includes(userId)
+      );
+      const mentionsToAdd = mentionIds.filter(
+        (userId) => !currentMentionIds.includes(userId)
+      );
+
+      if (mentionsToRemove.length > 0) {
+        await FeedMentions.destroy({
+          where: { feedId: id, userId: mentionsToRemove },
+          transaction,
+        });
+      }
+
+      if (mentionsToAdd.length > 0) {
+        const feedMentions = mentionsToAdd.map((userId) => ({
+          userId,
+          feedId: id,
+        }));
+        await FeedMentions.bulkCreate(feedMentions, { transaction });
+      }
+    }
+
+    if (hashTags && Array.isArray(hashTags)) {
+      const validHashTags = hashTags.filter((tag) => tag.trim() !== "");
+
+      const currentHashtags = await PostHashtags.findAll({
+        where: { feedId: id },
+        include: { model: Hashtags, attributes: ["id", "hashtag"] },
+        transaction,
+      });
+
+      const currentHashtagMap = currentHashtags.reduce((acc, ph) => {
+        if (ph.Hashtags && ph.Hashtags.hashtag) {
+          acc[ph.Hashtags.hashtag] = ph.Hashtags.id;
+        }
+        return acc;
+      }, {});
+
+      const newHashtags = validHashTags.filter(
+        (tag) => !currentHashtagMap[tag]
+      );
+      const removedHashtags = currentHashtags.filter(
+        (ph) => !validHashTags.includes(ph.Hashtags && ph.Hashtags.hashtag)
+      );
+
+      // Remove hashtags
+      await Promise.all(
+        removedHashtags.map(async (ph) => {
+          const hashtag = await Hashtags.findByPk(ph.hashtagId, {
+            transaction,
+          });
+          if (hashtag) {
+            await hashtag.decrement("usageCount", { by: 1, transaction });
+          } else {
+            console.error(`Hashtag with ID ${ph.hashtagId} not found.`);
+          }
+
+          await PostHashtags.destroy({
+            where: { feedId: id, hashtagId: ph.hashtagId },
+            transaction,
+          });
+        })
+      );
+
+      // Add new hashtags
+      const newHashtagPromises = newHashtags.map(async (tag) => {
+        const [hashtag] = await Hashtags.findOrCreate({
+          where: { hashtag: tag },
+          defaults: { usageCount: 0 },
+          transaction,
+        });
+        await hashtag.increment("usageCount", { by: 1, transaction });
+        return hashtag.id;
+      });
+
+      const newHashtagIds = await Promise.all(newHashtagPromises);
+
+      const postHashtags = newHashtagIds.map((hashtagId) => ({
+        feedId: id,
+        hashtagId,
+      }));
+      await PostHashtags.bulkCreate(postHashtags, { transaction });
+    }
+
+    await transaction.commit();
+
+    const updatedFeed = await Feed.findOne({ where: { id } });
+    res.status(200).json({ feed: updatedFeed });
+  } catch (error) {
+    await transaction.rollback();
     console.error("Error updating feed:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -125,14 +370,24 @@ const addLike = async (req, res) => {
 };
 
 const getLikes = async (req, res) => {
-  const { feedId, commentId } = req.query;
-  const feed = req.query.feedId || null;
-  const comment = req.query.commentId || null;
+  const feedId = req.query.feedId ? parseInt(req.query.feedId) : null;
+  const commentId = req.query.commentId ? parseInt(req.query.commentId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 30;
+  const offset = (page - 1) * limit;
 
   try {
     const feedLikes = await Like.findAll({
-      where: { feedId: feed, commentId: comment },
-      include: User,
+      offset,
+      limit,
+      where: { feedId, commentId },
+      attributes: [],
+      include: [
+        {
+          model: User,
+          attributes: ["id", "username", "profilePhoto"],
+        },
+      ],
     });
     res.status(200).json(feedLikes);
   } catch (error) {
@@ -142,9 +397,11 @@ const getLikes = async (req, res) => {
 };
 
 const addComment = async (req, res) => {
-  const { feedId, userId, comment, parentId } = req.body;
+  const { feedId, userId, comment, mentionIds, parentId } = req.body;
   const transaction = await sequelize.transaction();
   try {
+    const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
+
     const feed = await Feed.findByPk(feedId, { transaction });
     if (!feed) {
       throw new Error("Feed not found");
@@ -154,6 +411,13 @@ const addComment = async (req, res) => {
       { feedId, userId, comment, parentId: parentId || null },
       { transaction }
     );
+    if (parsedMentionIds && parsedMentionIds.length > 0) {
+      const feedMentions = parsedMentionIds.map((index) => ({
+        userId: index,
+        commentId: newComment.id,
+      }));
+      await FeedMentions.bulkCreate(feedMentions, { transaction });
+    }
     feed.commentCount += 1;
     await feed.save({ transaction });
     await transaction.commit();
@@ -165,9 +429,15 @@ const addComment = async (req, res) => {
   }
 };
 const getComments = async (req, res) => {
-  const { feedId } = req.params;
+  const feedId = parseInt(req.query.feedId);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 30;
+  const offset = (page - 1) * limit;
+
   try {
     const comments = await Comments.findAll({
+      offset,
+      limit,
       where: { feedId, parentId: null },
       order: [["createdAt", "DESC"]],
 
@@ -175,26 +445,65 @@ const getComments = async (req, res) => {
         {
           model: User,
           as: "CommentUser",
+          attributes: ["username", "profilePhoto"],
+        },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          order: [["createdAt", "ASC"]],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username", "profilePhoto"],
+            },
+          ],
         },
         {
           model: Comments,
           as: "Replies",
+          attributes: ["comment", "likeCount", "parentId"],
           order: [["createdAt", "ASC"]],
 
           include: [
             {
               model: User,
+              attributes: ["id", "username", "profilePhoto"],
               as: "ReplyUser",
+            },
+            {
+              model: FeedMentions,
+              attributes: ["id"],
+              order: [["createdAt", "ASC"]],
+              include: [
+                {
+                  model: User,
+                  attributes: ["id", "username", "profilePhoto"],
+                },
+              ],
             },
             {
               model: Comments,
               as: "NestedReplies",
+              attributes: ["comment", "likeCount", "parentId"],
+
               order: [["createdAt", "ASC"]],
 
               include: [
                 {
                   model: User,
                   as: "NestedReplyUser",
+                  attributes: ["id", "username", "profilePhoto"],
+                },
+                {
+                  model: FeedMentions,
+                  attributes: ["id"],
+                  order: [["createdAt", "ASC"]],
+                  include: [
+                    {
+                      model: User,
+                      attributes: ["id", "username", "profilePhoto"],
+                    },
+                  ],
                 },
                 //if going deeper replies add
               ],
@@ -212,20 +521,35 @@ const getComments = async (req, res) => {
 
 const updateComment = async (req, res) => {
   const { id } = req.params;
-  const { comment } = req.body;
+  const { comment, mentionIds } = req.body;
+
+  const transaction = await sequelize.transaction();
 
   try {
     const updatedComment = await Comments.update(
       { comment },
-      { where: { id } }
+      { where: { id }, transaction }
     );
     if (!updatedComment) {
+      await transaction, rollback();
       res.status(404).json({ error: "Comment not updated" });
-    } else {
-      const comment = await Comments.findByPk(id);
-      res.status(200).json(comment);
     }
+
+    if (mentionIds && Array.isArray(mentionIds)) {
+      await FeedMentions.destroy({ where: { commentId: id }, transaction });
+
+      const feedMentions = mentionIds.map((userId) => ({
+        userId,
+        commentId: id,
+      }));
+      await FeedMentions.bulkCreate(feedMentions, { transaction });
+    }
+    await transaction.commit();
+
+    const commentI = await Comments.findByPk(id);
+    res.status(200).json(commentI);
   } catch (error) {
+    await transaction.rollback();
     console.error("Error Updating comment:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -248,9 +572,76 @@ const deleteComment = async (req, res) => {
   }
 };
 
+const saveFeed = async (req, res) => {
+  const { userId, feedId } = req.body;
+  const transaction = await sequelize.transaction();
+
+  try {
+    const feed = await Feed.findByPk(feedId, { transaction });
+    if (!feed) {
+      throw new Error("Feed not found");
+    }
+    const existingfeed = await SavedFeeds.findOne({
+      where: { userId, feedId },
+      transaction,
+    });
+
+    if (existingfeed) {
+      await SavedFeeds.destroy({ where: { userId, feedId }, transaction });
+      feed.savedCount -= 1;
+    } else {
+      await SavedFeeds.create({ userId, feedId }, { transaction });
+      feed.savedCount += 1;
+    }
+    await feed.save({ transaction });
+    await transaction.commit();
+    res.status(200).json({
+      message: existingfeed
+        ? "Feed removed from saved successfully"
+        : "Feed saved successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("Error saving feeds", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getSavedFeeds = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  try {
+    const savedfeeds = await SavedFeeds.findAll({
+      offset,
+      limit,
+      where: { userId },
+      attributes: [],
+      include: [
+        {
+          model: Feed,
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username", "profilePhoto"],
+            },
+          ],
+        },
+      ],
+    });
+    res.status(200).json({ feeds: savedfeeds });
+  } catch (error) {
+    console.error("Error retrieving Saved Feeds", error);
+    res.status(500).json({ error: "Intrenal server error" });
+  }
+};
+
 module.exports = {
   addFeed,
   getFeeds,
+  getFeed,
   updateFeed,
   deleteFeed,
   addLike,
@@ -259,4 +650,6 @@ module.exports = {
   getComments,
   updateComment,
   deleteComment,
+  saveFeed,
+  getSavedFeeds,
 };

@@ -4,6 +4,8 @@ const sequelize = require("../config/connection");
 const Feed = require("./feed");
 const Like = require("./like");
 const Comments = require("./comments");
+const FeedMentions = require("./feedmentions");
+const SavedFeeds = require("./savedfeeds");
 
 const User = sequelize.define(
   "User",
@@ -40,8 +42,24 @@ const User = sequelize.define(
 User.hasMany(Feed, { foreignKey: "userId" });
 Feed.belongsTo(User, { foreignKey: "userId" });
 
+User.hasMany(FeedMentions, { foreignKey: "userId" });
+FeedMentions.belongsTo(User, { foreignKey: "userId" });
+
+// User.belongsToMany(Feed, {
+//   through: FeedMentions,
+//   as: "MentionedFeeds",
+//   foreignKey: "userId",
+// });
+
+// Feed.belongsToMany(User, {
+//   through: FeedMentions,
+//   as: "FeedMentions",
+//   foreignKey: "feedId",
+// });
+
 User.hasMany(Like, { foreignKey: "userId" });
 Like.belongsTo(User, { foreignKey: "userId" });
+
 User.belongsToMany(Feed, {
   through: Like,
   foreignKey: "userId",
@@ -50,6 +68,18 @@ Feed.belongsToMany(User, {
   through: Like,
   foreignKey: "feedId",
 });
+
+User.hasMany(SavedFeeds, { foreignKey: "userId" });
+SavedFeeds.belongsTo(User, { foreignKey: "userId" });
+
+// User.belongsToMany(Feed, {
+//   through: SavedFeeds,
+//   foreignKey: "userId",
+// });
+// Feed.belongsToMany(User, {
+//   through: SavedFeeds,
+//   foreignKey: "feedId",
+// });
 
 User.hasMany(Comments, { foreignKey: "userId", as: "Comments" });
 Comments.belongsTo(User, { foreignKey: "userId", as: "CommentUser" });

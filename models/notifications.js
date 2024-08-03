@@ -20,8 +20,31 @@ const Notifications = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
+    actroId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
     type: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.ENUM,
+      values: [
+        "like",
+        "comment",
+        "follow",
+        "mention",
+        "reply",
+        "follow request",
+        "custom",
+      ],
+      allowNull: false,
+    },
+    content: {
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
     feedId: {
@@ -44,23 +67,19 @@ const Notifications = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    actroId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "Users",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
-    message: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-    },
+
     isRead: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    actionURL: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    priority: {
+      type: DataTypes.ENUM,
+      values: ["High", "Medium", "Low"],
+      allowNull: false,
     },
     createdAt: {
       allowNull: false,

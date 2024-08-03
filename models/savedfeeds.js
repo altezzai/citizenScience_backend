@@ -1,9 +1,10 @@
 "use strict";
-const { Model, DataTypes } = require("sequelize");
+const { DataTypes } = require("sequelize");
+
 const sequelize = require("../config/connection");
 
-const Like = sequelize.define(
-  "Like",
+const SavedFeeds = sequelize.define(
+  "SavedFeeds",
   {
     id: {
       allowNull: false,
@@ -24,7 +25,7 @@ const Like = sequelize.define(
     },
     feedId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: "Feeds",
         key: "id",
@@ -32,16 +33,7 @@ const Like = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    commentId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: "Comments",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
+
     createdAt: {
       allowNull: false,
       type: DataTypes.DATE,
@@ -52,9 +44,9 @@ const Like = sequelize.define(
     },
   },
   {
-    modelName: "Like",
+    modelName: "SavedFeeds",
     timestamps: true,
   }
 );
 
-module.exports = Like;
+module.exports = SavedFeeds;

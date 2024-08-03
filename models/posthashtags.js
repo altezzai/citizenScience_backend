@@ -1,9 +1,9 @@
 "use strict";
-const { Model, DataTypes } = require("sequelize");
+const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
 
-const Like = sequelize.define(
-  "Like",
+const PostHashtags = sequelize.define(
+  "PostHashtags",
   {
     id: {
       allowNull: false,
@@ -11,20 +11,9 @@ const Like = sequelize.define(
       primaryKey: true,
       type: DataTypes.INTEGER,
     },
-
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "Users",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
     feedId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: "Feeds",
         key: "id",
@@ -32,11 +21,11 @@ const Like = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    commentId: {
+    hashtagId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: "Comments",
+        model: "Hashtags",
         key: "id",
       },
       onDelete: "CASCADE",
@@ -52,9 +41,9 @@ const Like = sequelize.define(
     },
   },
   {
-    modelName: "Like",
+    modelName: "PostHashtags",
     timestamps: true,
   }
 );
 
-module.exports = Like;
+module.exports = PostHashtags;
