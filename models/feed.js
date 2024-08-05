@@ -7,6 +7,7 @@ const FeedMentions = require("./feedmentions");
 const SavedFeeds = require("./savedfeeds");
 const PostHashtags = require("./posthashtags");
 const Hashtags = require("./hashtags");
+const Notifications = require("./notifications");
 
 const Feed = sequelize.define(
   "Feed",
@@ -18,13 +19,13 @@ const Feed = sequelize.define(
       type: DataTypes.INTEGER,
     },
     fileName: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING,
     },
     link: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
     },
     description: {
-      type: DataTypes.STRING(200),
+      type: DataTypes.TEXT,
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -98,6 +99,9 @@ PostHashtags.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(Like, { foreignKey: "feedId" });
 Like.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(Notifications, { foreignKey: "feedId" });
+Notifications.belongsTo(Feed, { foreignKey: "feedId" });
 
 module.exports = Feed;
 

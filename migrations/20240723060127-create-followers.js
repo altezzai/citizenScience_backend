@@ -3,7 +3,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Followers", {
-      userId: {
+      followerId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -14,7 +14,7 @@ module.exports = {
         onUpdate: "CASCADE",
         primaryKey: true,
       },
-      followerId: {
+      followingId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -35,7 +35,7 @@ module.exports = {
       },
     });
     await queryInterface.addConstraint("Followers", {
-      fields: ["userId", "followerId"],
+      fields: ["followerId", "followingId"],
       type: "unique",
       name: "unique_follower_following",
     });

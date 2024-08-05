@@ -20,7 +20,7 @@ const Notifications = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    actroId: {
+    actorId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -32,19 +32,11 @@ const Notifications = sequelize.define(
     },
     type: {
       type: DataTypes.ENUM,
-      values: [
-        "like",
-        "comment",
-        "follow",
-        "mention",
-        "reply",
-        "follow request",
-        "custom",
-      ],
+      values: ["like", "comment", "follow", "mention", "reply", "custom"],
       allowNull: false,
     },
     content: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     feedId: {

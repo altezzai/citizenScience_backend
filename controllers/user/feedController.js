@@ -9,6 +9,8 @@ const upload = require("../../config/uploadConfig");
 const SavedFeeds = require("../../models/savedfeeds");
 const Hashtags = require("../../models/hashtags");
 const PostHashtags = require("../../models/posthashtags");
+const { addNotification } = require("./notificationController");
+const Notifications = require("../../models/notifications");
 
 const addFeed = async (req, res) => {
   const { link, description, userId, mentionIds, hashTags } = req.body;
@@ -56,6 +58,20 @@ const addFeed = async (req, res) => {
         feedId: newFeed.id,
       }));
       await FeedMentions.bulkCreate(feedMentions, { transaction });
+
+      for (const mentionedUserId of parsedMentionIds) {
+        await addNotification(
+          mentionedUserId,
+          userId,
+          "mention",
+          "mentioned you in a feed",
+          newFeed.id,
+          null, // No commentId for feed mentions
+          `/feed/${newFeed.id}`,
+          "Medium",
+          transaction
+        );
+      }
     }
 
     if (validHashTags.length > 0) {
@@ -223,6 +239,14 @@ const updateFeed = async (req, res) => {
           where: { feedId: id, userId: mentionsToRemove },
           transaction,
         });
+        await Notifications.destroy({
+          where: {
+            userId: mentionsToRemove,
+            type: "mention",
+            feedId: id,
+          },
+          transaction,
+        });
       }
 
       if (mentionsToAdd.length > 0) {
@@ -231,6 +255,20 @@ const updateFeed = async (req, res) => {
           feedId: id,
         }));
         await FeedMentions.bulkCreate(feedMentions, { transaction });
+
+        for (const mentionedUserId of mentionsToAdd) {
+          await addNotification(
+            mentionedUserId,
+            feedExist.userId,
+            "mention",
+            "mentioned you in a post",
+            id,
+            null,
+            `/feed/${id}`,
+            "Medium",
+            transaction
+          );
+        }
       }
     }
 
@@ -329,16 +367,19 @@ const addLike = async (req, res) => {
 
   try {
     let target;
+    let content;
     if (feedId) {
       target = await Feed.findByPk(feedId, { transaction });
       if (!target) {
         throw new Error("Feed not Found");
       }
+      content = "liked your feed";
     } else if (commentId) {
       target = await Comments.findByPk(commentId, { transaction });
       if (!target) {
         throw new Error("Comment not Found");
       }
+      content = "liked your comment";
     } else {
       throw new Error("Either feedId or commentId must be provided");
     }
@@ -347,17 +388,42 @@ const addLike = async (req, res) => {
       where: { userId, feedId: feedId || null, commentId: commentId || null },
       transaction,
     });
+
     if (existingLike) {
       await Like.destroy({
         where: { userId, feedId: feedId || null, commentId: commentId || null },
         transaction,
       });
       target.likeCount -= 1;
+      await Notifications.destroy({
+        where: {
+          userId: target.userId,
+          actorId: userId,
+          type: "like",
+          feedId: feedId || null,
+          commentId: commentId || null,
+        },
+        transaction,
+      });
     } else {
       await Like.create({ userId, feedId, commentId }, { transaction });
       target.likeCount += 1;
+      await Notifications.create(
+        {
+          userId: target.userId,
+          actorId: userId,
+          type: "like",
+          content: content,
+          feedId: feedId || null,
+          commentId: commentId || null,
+          actionURL: `/feed/${feedId}`,
+          priority: "low",
+        },
+        { transaction }
+      );
     }
     await target.save({ transaction });
+
     await transaction.commit();
     res
       .status(200)
@@ -420,6 +486,52 @@ const addComment = async (req, res) => {
     }
     feed.commentCount += 1;
     await feed.save({ transaction });
+
+    if (parentId) {
+      const parentComment = await Comments.findByPk(parentId, { transaction });
+      if (parentComment) {
+        await addNotification(
+          parentComment.userId,
+          userId,
+          "reply",
+          "replied to your comment",
+          feedId,
+          newComment.id,
+          `/feed/${feedId}`,
+          "Medium",
+          transaction
+        );
+      }
+    } else {
+      await addNotification(
+        feed.userId,
+        userId,
+        "comment",
+        "commented on your post",
+        feedId,
+        newComment.id,
+        `/feed/${feedId}`,
+        "Medium",
+        transaction
+      );
+    }
+
+    if (parsedMentionIds && parsedMentionIds.length > 0) {
+      for (const mentionedUserId of parsedMentionIds) {
+        await addNotification(
+          mentionedUserId,
+          userId,
+          "mention",
+          "mentioned you in a comment",
+          feedId,
+          newComment.id,
+          `/feed/${feedId}`,
+          "Medium",
+          transaction
+        );
+      }
+    }
+
     await transaction.commit();
     res.status(200).json(newComment);
   } catch (error) {
@@ -526,6 +638,8 @@ const updateComment = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
+    const commentInstance = await Comments.findByPk(id, { transaction });
+
     const updatedComment = await Comments.update(
       { comment },
       { where: { id }, transaction }
@@ -536,13 +650,61 @@ const updateComment = async (req, res) => {
     }
 
     if (mentionIds && Array.isArray(mentionIds)) {
-      await FeedMentions.destroy({ where: { commentId: id }, transaction });
+      const existingMentions = await FeedMentions.findAll({
+        where: { commentId: id },
+        transaction,
+      });
 
-      const feedMentions = mentionIds.map((userId) => ({
-        userId,
-        commentId: id,
-      }));
-      await FeedMentions.bulkCreate(feedMentions, { transaction });
+      const existingMentionIds = existingMentions.map(
+        (mention) => mention.userId
+      );
+      const mentionsToRemove = existingMentionIds.filter(
+        (id) => !mentionIds.includes(id)
+      );
+      const mentionsToAdd = mentionIds.filter(
+        (id) => !existingMentionIds.includes(id)
+      );
+
+      if (mentionsToRemove.length > 0) {
+        await FeedMentions.destroy({
+          where: {
+            commentId: id,
+            userId: mentionsToRemove,
+          },
+          transaction,
+        });
+
+        await Notifications.destroy({
+          where: {
+            userId: mentionsToRemove,
+            type: "mention",
+            commentId: id,
+          },
+          transaction,
+        });
+      }
+
+      if (mentionsToAdd.length > 0) {
+        const newFeedMentions = mentionsToAdd.map((userId) => ({
+          userId,
+          commentId: id,
+        }));
+        await FeedMentions.bulkCreate(newFeedMentions, { transaction });
+
+        for (const mentionedUserId of mentionsToAdd) {
+          await addNotification(
+            mentionedUserId,
+            commentInstance.userId,
+            "mention",
+            "mentioned you in a comment",
+            commentInstance.feedId,
+            id,
+            `/feed/${commentInstance.feedId}`,
+            "Medium",
+            transaction
+          );
+        }
+      }
     }
     await transaction.commit();
 
