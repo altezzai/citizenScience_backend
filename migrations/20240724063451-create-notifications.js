@@ -19,9 +19,9 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      actroId: {
+      actorId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "Users",
           key: "id",
@@ -31,20 +31,12 @@ module.exports = {
       },
       type: {
         type: Sequelize.ENUM,
-        values: [
-          "like",
-          "comment",
-          "follow",
-          "mention",
-          "reply",
-          "follow request",
-          "custom",
-        ],
+        values: ["like", "comment", "follow", "mention", "reply", "custom"],
         allowNull: false,
       },
       content: {
-        type: Sequelize.STRING(50),
-        allowNull: false,
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       feedId: {
         type: Sequelize.INTEGER,

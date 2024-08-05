@@ -3,6 +3,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
 const { FOREIGNKEYS } = require("sequelize/lib/query-types");
 const FeedMentions = require("./feedmentions");
+const Notifications = require("./notifications");
 
 const Comments = sequelize.define("Comments", {
   id: {
@@ -67,6 +68,9 @@ Comments.hasMany(FeedMentions, { foreignKey: "commentId" });
 FeedMentions.belongsTo(Comments, {
   foreignKey: "commentId",
 });
+
+Comments.hasMany(Notifications, { foreignKey: "commentId" });
+Notifications.belongsTo(Comments, { foreignKey: "commentId" });
 
 module.exports = Comments;
 

@@ -6,7 +6,7 @@ const User = require("./user");
 const Followers = sequelize.define(
   "Followers",
   {
-    userId: {
+    followerId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -17,7 +17,7 @@ const Followers = sequelize.define(
       onUpdate: "CASCADE",
       primaryKey: true,
     },
-    followerId: {
+    followingId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {

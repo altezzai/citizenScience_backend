@@ -55,7 +55,7 @@ module.exports = {
         primaryKey: true,
       },
       userType: {
-        type: Sequelize.STRING(10),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       createdAt: {

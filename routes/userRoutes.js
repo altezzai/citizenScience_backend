@@ -2,6 +2,7 @@ const express = require("express");
 
 const feedController = require("../controllers/user/feedController");
 const connectionController = require("../controllers/user/connectionController");
+const notificationController = require("../controllers/user/notificationController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -22,7 +23,8 @@ router.get("/savedFeeds", feedController.getSavedFeeds);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);
-router.post("/following", connectionController.following);
 router.get("/followings", connectionController.followings);
+
+router.get("/notifications", notificationController.notifications);
 
 module.exports = router;

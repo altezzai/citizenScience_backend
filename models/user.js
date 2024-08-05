@@ -7,7 +7,7 @@ const Comments = require("./comments");
 const FeedMentions = require("./feedmentions");
 const SavedFeeds = require("./savedfeeds");
 const Followers = require("./followers");
-const Followings = require("./followings");
+const Notifications = require("./notifications");
 
 const User = sequelize.define(
   "User",
@@ -68,18 +68,27 @@ User.hasMany(Comments, { foreignKey: "userId", as: "NestedReplies" });
 Comments.belongsTo(User, { foreignKey: "userId", as: "ReplyUser" });
 Comments.belongsTo(User, { foreignKey: "userId", as: "NestedReplyUser" });
 
-User.hasMany(Followers, { foreignKey: "userId", as: "user" });
-Followers.belongsTo(User, { foreignKey: "userId", as: "UserDetails" });
-User.hasMany(Followers, { foreignKey: "followerId", as: "follower" });
+User.hasMany(Followers, { foreignKey: "followerId", as: "Followers" });
 Followers.belongsTo(User, { foreignKey: "followerId", as: "FollowerDetails" });
-
-User.hasMany(Followings, { foreignKey: "userId", as: "users" });
-Followings.belongsTo(User, { foreignKey: "userId", as: "userfollowing" });
-User.hasMany(Followings, { foreignKey: "followingId", as: "followings" });
-Followings.belongsTo(User, {
+User.hasMany(Followers, { foreignKey: "followingId", as: "Following" });
+Followers.belongsTo(User, {
   foreignKey: "followingId",
   as: "FollowingDetails",
 });
+
+User.hasMany(Notifications, {
+  foreignKey: "userId",
+  as: "ReceivedNotifications",
+});
+
+Notifications.belongsTo(User, { foreignKey: "userId", as: "Receipient" });
+
+User.hasMany(Notifications, {
+  foreignKey: "actorId",
+  as: "TriggeredNotifications",
+});
+
+Notifications.belongsTo(User, { foreignKey: "actorId", as: "Actor" });
 
 module.exports = User;
 

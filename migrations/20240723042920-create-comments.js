@@ -30,7 +30,7 @@ module.exports = {
         onUpdate: "CASCADE",
       },
       comment: {
-        type: Sequelize.STRING(200),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       parentId: {
