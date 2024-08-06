@@ -416,7 +416,7 @@ const addLike = async (req, res) => {
           content: content,
           feedId: feedId || null,
           commentId: commentId || null,
-          actionURL: `/feed/${feedId}`,
+          actionURL: `/feed/${target.feedId}`,
           priority: "low",
         },
         { transaction }

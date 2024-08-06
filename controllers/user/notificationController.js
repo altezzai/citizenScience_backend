@@ -103,8 +103,157 @@ const markNotificationAsRead = async (req, res) => {
   }
 };
 
+const getUserNotifications = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const limit = parseInt(req.query.limit) || 100;
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+  try {
+    const notifications = await Notifications.findAll({
+      where: { userId },
+      order: [["createdAt", "DESC"]],
+      limit: 100,
+      include: [
+        {
+          model: User,
+          as: "Actor",
+          attributes: ["id", "username", "profilePhoto"],
+        },
+        {
+          model: Feed,
+          attributes: ["fileName"],
+        },
+        {
+          model: Comments,
+          attributes: ["id", "comment"],
+        },
+      ],
+    });
+
+    if (notifications.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const groupedNotifications = [];
+    let currentLikeGroup = null;
+
+    for (const notification of notifications) {
+      const actor = notification.Actor;
+      const actorUsername = actor ? actor.username : "Unknown User";
+      const actorId = actor ? actor.id : "unknown";
+      const actorImage = actor ? actor.profilePhoto : "unknown";
+
+      const notificationData = {
+        id: notification.id,
+        type: notification.type,
+        feedId: notification.feedId,
+        commentId: notification.commentId,
+        actors: [
+          { id: actorId, username: actorUsername, profilePhoto: actorImage },
+        ],
+        content: notification.content,
+        actionURL: notification.actionURL,
+        createdAt: notification.createdAt,
+        relatedFeed: notification.Feed,
+        relatedComment: notification.Comment,
+      };
+
+      if (
+        notification.type !== "like" ||
+        notification.createdAt > tenMinutesAgo
+      ) {
+        // For non-like notifications or recent likes, add them individually
+        groupedNotifications.push({
+          ...notificationData,
+          count: 1,
+          message: formatSingleNotificationMessage(notificationData),
+        });
+      } else if (notification.type === "like") {
+        // For older like notifications, group them
+        const groupKey = notification.commentId
+          ? `comment_${notification.commentId}`
+          : `feed_${notification.feedId}`;
+        if (!currentLikeGroup || currentLikeGroup.groupKey !== groupKey) {
+          if (currentLikeGroup) {
+            groupedNotifications.push(currentLikeGroup);
+          }
+          currentLikeGroup = {
+            ...notificationData,
+            groupKey,
+            count: 1,
+          };
+        } else {
+          currentLikeGroup.count++;
+          if (!currentLikeGroup.actors.some((a) => a.id === actorId)) {
+            currentLikeGroup.actors.push({
+              id: actorId,
+              username: actorUsername,
+              profilePhoto: actorImage,
+            });
+          }
+          if (
+            new Date(notification.createdAt) >
+            new Date(currentLikeGroup.createdAt)
+          ) {
+            currentLikeGroup.createdAt = notification.createdAt;
+          }
+        }
+      }
+    }
+
+    if (currentLikeGroup) {
+      groupedNotifications.push(currentLikeGroup);
+    }
+
+    const finalGroupedNotifications = groupedNotifications
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limit)
+      .map((group) => ({
+        ...group,
+        message:
+          group.count > 1 ? formatGroupedLikeMessage(group) : group.message,
+      }));
+
+    res.status(200).json(finalGroupedNotifications);
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+function formatSingleNotificationMessage(notification) {
+  switch (notification.type) {
+    case "like":
+      return notification.commentId
+        ? `${notification.actors[0].username} liked your comment`
+        : `${notification.actors[0].username} liked your feed`;
+    case "comment":
+      return `${notification.actors[0].username} commented on your feed`;
+    case "follow":
+      return `${notification.actors[0].username} started following you`;
+    case "mention":
+      return `${notification.actors[0].username} mentioned you in a feed`;
+    case "custom":
+    default:
+      return notification.content;
+  }
+}
+
+function formatGroupedLikeMessage(group) {
+  const otherCount = group.count - 1;
+  const likeType = group.commentId ? "comment" : "feed";
+  if (otherCount === 0) {
+    return `${group.actors[0].username} liked your ${likeType}`;
+  } else {
+    return `${group.actors[0].username} and ${otherCount} other${
+      otherCount > 1 ? "s" : ""
+    } liked your ${likeType}`;
+  }
+}
+
 module.exports = {
   addNotification,
   notifications,
   markNotificationAsRead,
+  getUserNotifications,
 };

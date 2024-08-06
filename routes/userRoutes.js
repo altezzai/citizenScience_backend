@@ -26,5 +26,6 @@ router.get("/followers", connectionController.followers);
 router.get("/followings", connectionController.followings);
 
 router.get("/notifications", notificationController.notifications);
+router.get("/notify", notificationController.getUserNotifications);
 
 module.exports = router;
