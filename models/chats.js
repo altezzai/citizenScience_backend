@@ -1,9 +1,9 @@
 "use strict";
-const { Model, DataTypes } = require("sequelize");
+const { DataTypes, Model } = require("sequelize");
 const sequelize = require("../config/connection");
 
-const Communities = sequelize.define(
-  "Communities",
+const Chats = sequelize.define(
+  "Chats",
   {
     id: {
       allowNull: false,
@@ -11,18 +11,24 @@ const Communities = sequelize.define(
       primaryKey: true,
       type: DataTypes.INTEGER,
     },
-    communityName: {
-      type: DataTypes.STRING,
+    type: {
+      type: DataTypes.ENUM("personal", "group", "community"),
       allowNull: false,
-      unique: true,
     },
-    profilePhoto: {
+    name: {
       type: DataTypes.STRING,
-      allowNull: true,
     },
-    creatorId: {
+    createdBy: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    },
+    icon: {
+      type: DataTypes.STRING,
     },
     createdAt: {
       allowNull: false,
@@ -34,9 +40,9 @@ const Communities = sequelize.define(
     },
   },
   {
-    modelName: "Communities",
-    timestamps: true,
+    modelName: "Chats",
+    timeStamps: true,
   }
 );
 
-module.exports = Communities;
+module.exports = Chats;

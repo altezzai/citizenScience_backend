@@ -1,8 +1,9 @@
 "use strict";
-const { Model, DataTypes } = require("sequelize");
+const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
-const Notifications = sequelize.define(
-  "Notifications",
+
+const Messages = sequelize.define(
+  "Messages",
   {
     id: {
       allowNull: false,
@@ -10,7 +11,17 @@ const Notifications = sequelize.define(
       primaryKey: true,
       type: DataTypes.INTEGER,
     },
-    userId: {
+    chatId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Chats",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
+    senderId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -20,58 +31,26 @@ const Notifications = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    actorId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "Users",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
-    type: {
-      type: DataTypes.ENUM,
-      values: ["like", "comment", "follow", "mention", "reply", "custom"],
-      allowNull: false,
+    mediaUrl: {
+      type: DataTypes.STRING,
     },
     content: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
+    },
+    replyToId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    feedId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
       references: {
-        model: "Feeds",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
-    commentId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: "Comments",
+        model: "Messages",
         key: "id",
       },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
 
-    isRead: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    actionURL: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    priority: {
-      type: DataTypes.ENUM,
-      values: ["High", "Medium", "Low"],
+    sendAt: {
       allowNull: false,
+      type: DataTypes.DATE,
     },
     createdAt: {
       allowNull: false,
@@ -83,10 +62,9 @@ const Notifications = sequelize.define(
     },
   },
   {
-    modelName: "Notifications",
+    modelName: "Messages",
     timestamps: true,
   }
 );
 
-module.exports = Notifications;
-
+module.exports = Messages;
