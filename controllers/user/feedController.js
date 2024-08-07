@@ -11,6 +11,7 @@ const Hashtags = require("../../models/hashtags");
 const PostHashtags = require("../../models/posthashtags");
 const { addNotification } = require("./notificationController");
 const Notifications = require("../../models/notifications");
+const Followers = require("../../models/followers");
 
 const addFeed = async (req, res) => {
   const { link, description, userId, mentionIds, hashTags } = req.body;
@@ -105,14 +106,25 @@ const addFeed = async (req, res) => {
 };
 
 const getFeeds = async (req, res) => {
+  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
   try {
+    const followers = await Followers.findAll({
+      where: { followerId: userId },
+      attributes: ["followingId"],
+    });
+
+    const feedUserIds = [
+      userId,
+      ...followers.map((follower) => follower.followingId),
+    ];
     const feeds = await Feed.findAll({
       offset,
       limit,
+      where: { userId: feedUserIds },
       order: [["createdAt", "DESC"]],
       include: [
         { model: User, attributes: ["id", "username", "profilePhoto"] },
@@ -416,7 +428,7 @@ const addLike = async (req, res) => {
           content: content,
           feedId: feedId || null,
           commentId: commentId || null,
-          actionURL: `/feed/${target.feedId}`,
+          actionURL: `/feed/${feedId}`,
           priority: "low",
         },
         { transaction }
