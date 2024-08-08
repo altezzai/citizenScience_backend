@@ -46,7 +46,7 @@ const Chats = sequelize.define(
   }
 );
 
-// Chats.hasMany(ChatMembers, { foreignKey: "chatId" });
-// ChatMembers.belongsTo(Chats, { foreignKey: "chatId" });
+Chats.hasMany(ChatMembers, { foreignKey: "chatId" });
+ChatMembers.belongsTo(Chats, { foreignKey: "chatId" });
 
 module.exports = Chats;

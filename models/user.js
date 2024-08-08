@@ -95,9 +95,9 @@ User.hasMany(Notifications, {
 Notifications.belongsTo(User, { foreignKey: "actorId", as: "Actor" });
 
 User.hasMany(Messages, { foreignKey: "senderId" });
-Messages.belongsTo(User, { foreignKey: "senderId" });
+Messages.belongsTo(User, { foreignKey: "senderId", as: "sender" });
 
-User.belongsToMany(Chats, { through: ChatMembers });
+// User.belongsToMany(Chats, { through: ChatMembers });
 
 User.hasMany(Chats, { foreignKey: "createdBy" });
 Chats.belongsTo(User, { foreignKey: "createdBy" });
@@ -105,7 +105,7 @@ Chats.belongsTo(User, { foreignKey: "createdBy" });
 User.hasMany(MessageStatuses, { foreignKey: "userId" });
 MessageStatuses.belongsTo(User, { foreignKey: "userId" });
 
-// User.hasMany(ChatMembers, { foreignKey: "userId" });
-// ChatMembers.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(ChatMembers, { foreignKey: "userId" });
+ChatMembers.belongsTo(User, { foreignKey: "userId" });
 
 module.exports = User;

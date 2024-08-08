@@ -3,6 +3,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
 const Chats = require("./chats");
 const MessageStatuses = require("./messagestatuses");
+const User = require("./user");
 
 const Messages = sequelize.define(
   "Messages",
@@ -41,7 +42,7 @@ const Messages = sequelize.define(
     },
     replyToId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+
       references: {
         model: "Messages",
         key: "id",
@@ -50,7 +51,7 @@ const Messages = sequelize.define(
       onUpdate: "CASCADE",
     },
 
-    sendAt: {
+    sentAt: {
       allowNull: false,
       type: DataTypes.DATE,
     },

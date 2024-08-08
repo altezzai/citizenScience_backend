@@ -37,7 +37,7 @@ module.exports = {
       },
       replyToId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+
         references: {
           model: "Messages",
           key: "id",
@@ -46,7 +46,7 @@ module.exports = {
         onUpdate: "CASCADE",
       },
 
-      sendAt: {
+      sentAt: {
         allowNull: false,
         type: Sequelize.DATE,
       },
