@@ -8,6 +8,10 @@ const FeedMentions = require("./feedmentions");
 const SavedFeeds = require("./savedfeeds");
 const Followers = require("./followers");
 const Notifications = require("./notifications");
+const Messages = require("./messages");
+const Chats = require("./chats");
+const ChatMembers = require("./chatmembers");
+const MessageStatuses = require("./messagestatuses");
 
 const User = sequelize.define(
   "User",
@@ -89,5 +93,16 @@ User.hasMany(Notifications, {
 });
 
 Notifications.belongsTo(User, { foreignKey: "actorId", as: "Actor" });
+
+User.hasMany(Messages, { foreignKey: "senderId" });
+Messages.belongsTo(User, { foreignKey: "senderId" });
+
+User.belongsToMany(Chats, { through: ChatMembers });
+
+User.hasMany(Chats, { foreignKey: "createdBy" });
+Chats.belongsTo(User, { foreignKey: "createdBy" });
+
+User.hasMany(MessageStatuses, { foreignKey: "userId" });
+MessageStatuses.belongsTo(User, { foreignKey: "userId" });
 
 module.exports = User;

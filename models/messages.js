@@ -1,6 +1,8 @@
 "use strict";
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
+const Chats = require("./chats");
+const MessageStatuses = require("./messagestatuses");
 
 const Messages = sequelize.define(
   "Messages",
@@ -66,5 +68,14 @@ const Messages = sequelize.define(
     timestamps: true,
   }
 );
+
+Chats.hasMany(Messages, { foreignKey: "chatId" });
+Messages.belongsTo(Chats, { foreignKey: "chatId" });
+
+Messages.hasMany(Messages, { foreignKey: "replyToId" });
+Messages.belongsTo(Messages, { foreignKey: "replyToId", as: "replyTo" });
+
+Messages.hasMany(MessageStatuses, { foreignKey: "messageId" });
+MessageStatuses.belongsTo(Messages, { foreignKey: "messageId" });
 
 module.exports = Messages;

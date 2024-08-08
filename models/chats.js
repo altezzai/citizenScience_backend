@@ -1,6 +1,8 @@
 "use strict";
 const { DataTypes, Model } = require("sequelize");
 const sequelize = require("../config/connection");
+const Messages = require("./messages");
+const ChatMembers = require("./chatmembers");
 
 const Chats = sequelize.define(
   "Chats",
@@ -44,5 +46,7 @@ const Chats = sequelize.define(
     timeStamps: true,
   }
 );
+
+Chats.belongsToMany(User, { through: ChatMembers });
 
 module.exports = Chats;
