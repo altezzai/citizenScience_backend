@@ -43,8 +43,15 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addConstraint("ChatMembers", {
+      fields: ["chatId", "userId"],
+      type: "unique",
+      name: "unique_chat_members",
+    });
   },
+
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeConstraint("ChatMembers", "unique_chat_members");
     await queryInterface.dropTable("ChatMembers");
   },
 };

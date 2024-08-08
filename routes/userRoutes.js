@@ -3,6 +3,7 @@ const express = require("express");
 const feedController = require("../controllers/user/feedController");
 const connectionController = require("../controllers/user/connectionController");
 const notificationController = require("../controllers/user/notificationController");
+const chatController = require("../controllers/user/chatController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -27,5 +28,8 @@ router.get("/followings", connectionController.followings);
 
 router.get("/notifications", notificationController.notifications);
 router.get("/notify", notificationController.getUserNotifications);
+
+//chat section
+router.post("/icon", upload.single("file"), chatController.fileUpload);
 
 module.exports = router;

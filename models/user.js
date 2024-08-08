@@ -105,4 +105,7 @@ Chats.belongsTo(User, { foreignKey: "createdBy" });
 User.hasMany(MessageStatuses, { foreignKey: "userId" });
 MessageStatuses.belongsTo(User, { foreignKey: "userId" });
 
+// User.hasMany(ChatMembers, { foreignKey: "userId" });
+// ChatMembers.belongsTo(User, { foreignKey: "userId" });
+
 module.exports = User;

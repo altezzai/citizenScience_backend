@@ -51,4 +51,5 @@ const ChatMembers = sequelize.define(
   }
 );
 
+
 module.exports = ChatMembers;
