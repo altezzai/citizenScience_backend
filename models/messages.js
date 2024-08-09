@@ -4,6 +4,7 @@ const sequelize = require("../config/connection");
 const Chats = require("./chats");
 const MessageStatuses = require("./messagestatuses");
 const User = require("./user");
+const DeletedMessages = require("./deletedmessages");
 
 const Messages = sequelize.define(
   "Messages",
@@ -50,6 +51,15 @@ const Messages = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
+    overallStatus: {
+      type: DataTypes.ENUM("sent", "received", "read"),
+      allowNull: false,
+    },
+    deleteForEveryone: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
 
     sentAt: {
       allowNull: false,
@@ -71,12 +81,15 @@ const Messages = sequelize.define(
 );
 
 Chats.hasMany(Messages, { foreignKey: "chatId" });
-Messages.belongsTo(Chats, { foreignKey: "chatId" });
+Messages.belongsTo(Chats, { foreignKey: "chatId"});
 
 Messages.hasMany(Messages, { foreignKey: "replyToId" });
 Messages.belongsTo(Messages, { foreignKey: "replyToId", as: "replyTo" });
 
 Messages.hasMany(MessageStatuses, { foreignKey: "messageId" });
 MessageStatuses.belongsTo(Messages, { foreignKey: "messageId" });
+
+Messages.hasMany(DeletedMessages, { foreignKey: "messageId" });
+DeletedMessages.belongsTo(Messages, { foreignKey: "messageId" });
 
 module.exports = Messages;

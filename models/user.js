@@ -12,6 +12,8 @@ const Messages = require("./messages");
 const Chats = require("./chats");
 const ChatMembers = require("./chatmembers");
 const MessageStatuses = require("./messagestatuses");
+const DeletedMessages = require("./deletedmessages");
+const DeletedChats = require("./deletedchats");
 
 const User = sequelize.define(
   "User",
@@ -107,5 +109,11 @@ MessageStatuses.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(ChatMembers, { foreignKey: "userId" });
 ChatMembers.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(DeletedMessages, { foreignKey: "userId" });
+DeletedMessages.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(DeletedChats, { foreignKey: "userId" });
+DeletedChats.belongsTo(User, { foreignKey: "userId" });
 
 module.exports = User;

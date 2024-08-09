@@ -2,24 +2,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Messages", {
+    await queryInterface.createTable("DeletedMessages", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      chatId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Chats",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-      senderId: {
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -29,15 +19,9 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      mediaUrl: {
-        type: Sequelize.STRING,
-      },
-      content: {
-        type: Sequelize.TEXT,
-      },
-      replyToId: {
+      messageId: {
         type: Sequelize.INTEGER,
-
+        allowNull: false,
         references: {
           model: "Messages",
           key: "id",
@@ -45,17 +29,7 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      overallStatus: {
-        type: Sequelize.ENUM("sent", "received", "read"),
-        allowNull: false,
-      },
-      deleteForEveryone: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-
-      sentAt: {
+      deletedAt: {
         allowNull: false,
         type: Sequelize.DATE,
       },
@@ -68,8 +42,18 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addConstraint("DeletedMessages", {
+      fields: ["userId", "messageId"],
+      type: "unique",
+      name: "unique_delete_message",
+    });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Messages");
+    await queryInterface.removeConstraint(
+      "DeletedMessages",
+      "unique_delete_message"
+    );
+
+    await queryInterface.dropTable("DeletedMessages");
   },
 };

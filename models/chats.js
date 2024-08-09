@@ -2,6 +2,7 @@
 const { DataTypes, Model } = require("sequelize");
 const sequelize = require("../config/connection");
 const ChatMembers = require("./chatmembers");
+const DeletedChats = require("./deletedchats");
 
 const Chats = sequelize.define(
   "Chats",
@@ -48,5 +49,8 @@ const Chats = sequelize.define(
 
 Chats.hasMany(ChatMembers, { foreignKey: "chatId" });
 ChatMembers.belongsTo(Chats, { foreignKey: "chatId" });
+
+Chats.hasMany(DeletedChats, { foreignKey: "chatId" });
+DeletedChats.belongsTo(Chats, { foreignKey: "chatId" });
 
 module.exports = Chats;

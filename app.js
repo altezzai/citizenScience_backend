@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const userRoutes = require("./routes/userRoutes");
-const socketHandler = require("./socket");
+const socketHandler = require("./socketHandlers/socket");
 
 const app = express();
 const server = http.createServer(app);

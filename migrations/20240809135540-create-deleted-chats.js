@@ -2,12 +2,22 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Messages", {
+    await queryInterface.createTable("DeletedChats", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       chatId: {
         type: Sequelize.INTEGER,
@@ -19,43 +29,7 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
-      senderId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-      mediaUrl: {
-        type: Sequelize.STRING,
-      },
-      content: {
-        type: Sequelize.TEXT,
-      },
-      replyToId: {
-        type: Sequelize.INTEGER,
-
-        references: {
-          model: "Messages",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-      overallStatus: {
-        type: Sequelize.ENUM("sent", "received", "read"),
-        allowNull: false,
-      },
-      deleteForEveryone: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-
-      sentAt: {
+      deletedAt: {
         allowNull: false,
         type: Sequelize.DATE,
       },
@@ -68,8 +42,15 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addConstraint("DeletedChats", {
+      fields: ["userId", "chatId"],
+      type: "unique",
+      name: "unique_delete_chat",
+    });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Messages");
+    await queryInterface.removeConstraint("DeletedChats", "unique_delete_chat");
+
+    await queryInterface.dropTable("DeletedChats");
   },
 };
