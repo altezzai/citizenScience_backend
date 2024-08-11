@@ -13,7 +13,14 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
       fileName: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
+        get() {
+          const rawValue = this.getDataValue("fileName");
+          return rawValue ? JSON.parse(rawValue) : [];
+        },
+        set(value) {
+          this.setDataValue("fileName", JSON.stringify(value));
+        },
       },
       link: {
         type: Sequelize.STRING,

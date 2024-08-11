@@ -8,6 +8,12 @@ const FeedMentions = require("./feedmentions");
 const SavedFeeds = require("./savedfeeds");
 const Followers = require("./followers");
 const Notifications = require("./notifications");
+const Messages = require("./messages");
+const Chats = require("./chats");
+const ChatMembers = require("./chatmembers");
+const MessageStatuses = require("./messagestatuses");
+const DeletedMessages = require("./deletedmessages");
+const DeletedChats = require("./deletedchats");
 
 const User = sequelize.define(
   "User",
@@ -90,52 +96,24 @@ User.hasMany(Notifications, {
 
 Notifications.belongsTo(User, { foreignKey: "actorId", as: "Actor" });
 
+User.hasMany(Messages, { foreignKey: "senderId" });
+Messages.belongsTo(User, { foreignKey: "senderId", as: "sender" });
+
+// User.belongsToMany(Chats, { through: ChatMembers });
+
+User.hasMany(Chats, { foreignKey: "createdBy" });
+Chats.belongsTo(User, { foreignKey: "createdBy" });
+
+User.hasMany(MessageStatuses, { foreignKey: "userId" });
+MessageStatuses.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(ChatMembers, { foreignKey: "userId" });
+ChatMembers.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(DeletedMessages, { foreignKey: "userId" });
+DeletedMessages.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(DeletedChats, { foreignKey: "userId" });
+DeletedChats.belongsTo(User, { foreignKey: "userId" });
+
 module.exports = User;
-
-// class User extends Model {
-//   static associate(models) {
-
-//     User.belongsToMany(models.User, {
-//       through: models.Followings,
-//       foreignKey: "userId",
-//       otherKey: "followingId",
-//     }); //where each user can have multiple user followings
-//     User.belongsToMany(models.Group, {
-//       through: models.UserGroups,
-//       foreignKey: "userId",
-//       otherKey: "groupId",
-//     });
-//     User.belongsToMany(models.Communities, {
-//       through: models.userCommunity,
-//       foreignKey: "userId",
-//     });
-//     User.hasMany(models.Notifications, {
-//       foreignKey: "userId",
-//     });
-//     User.hasMany(models.Notifications, {
-//       foreignKey: "actorId",
-//     });
-//     User.hasMany(models.PersonalMessages, {
-//       foreignKey: "senderId",
-//     });
-//     User.hasMany(models.PersonalMessages, {
-//       foreignKey: "recipientId",
-//     });
-//     User.hasMany(models.GroupMessages, {
-//       foreignKey: "senderId",
-//     });
-//   }
-// }
-// User.init(
-//   {
-//     username: DataTypes.STRING,
-//     email: DataTypes.STRING,
-//     password: DataTypes.STRING,
-//     profilePhoto: DataTypes.STRING,
-//   },
-//   {
-//     sequelize,
-//     modelName: "User",
-//     timestamps: false,
-//   }
-// );

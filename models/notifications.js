@@ -90,17 +90,3 @@ const Notifications = sequelize.define(
 
 module.exports = Notifications;
 
-// static associate(models) {
-//   Notifications.belongsTo(models.User,{
-//     foreignKey:'userId'
-//   });
-//   Notifications.belongsTo(models.User,{
-//     foreignKey:'actorId'
-//   });
-//   Notifications.belongsTo(models.Feed,{
-//     foreignKey:'feedId'
-//   });
-//   Notifications.belongsTo(models.Comment,{
-//     foreignKey:'commentId'
-//   });
-// }

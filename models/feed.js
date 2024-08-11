@@ -19,7 +19,14 @@ const Feed = sequelize.define(
       type: DataTypes.INTEGER,
     },
     fileName: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
+      get() {
+        const rawValue = this.getDataValue("fileName");
+        return rawValue ? JSON.parse(rawValue) : [];
+      },
+      set(value) {
+        this.setDataValue("fileName", JSON.stringify(value));
+      },
     },
     link: {
       type: DataTypes.STRING,
@@ -88,14 +95,6 @@ SavedFeeds.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(PostHashtags, { foreignKey: "feedId" });
 PostHashtags.belongsTo(Feed, { foreignKey: "feedId" });
-// Feed.belongsToMany(Hashtags, {
-//   through: PostHashtags,
-//   foreignKey: "feedId",
-// });
-// Hashtags.belongsToMany(Feed, {
-//   through: PostHashtags,
-//   foreignKey: "hashtagId",
-// });
 
 Feed.hasMany(Like, { foreignKey: "feedId" });
 Like.belongsTo(Feed, { foreignKey: "feedId" });
@@ -104,10 +103,3 @@ Feed.hasMany(Notifications, { foreignKey: "feedId" });
 Notifications.belongsTo(Feed, { foreignKey: "feedId" });
 
 module.exports = Feed;
-
-// class Feed extends Model {
-//   static associate(models) {
-
-//     Feed.hasMany(models.Notifications, { foreignKey: "feedId" });
-//   }
-// }

@@ -15,7 +15,7 @@ const Followers = require("../../models/followers");
 
 const addFeed = async (req, res) => {
   const { link, description, userId, mentionIds, hashTags } = req.body;
-  const fileName = req.file ? req.file.filename : null;
+  const files = req.files || [];
 
   let parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : [];
   let parsedHashTags = Array.isArray(hashTags) ? hashTags : [];
@@ -44,6 +44,7 @@ const addFeed = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
+    const fileName = files.map((file) => file.filename);
     const newFeed = await Feed.create(
       {
         fileName,
@@ -374,7 +375,8 @@ const deleteFeed = async (req, res) => {
 };
 
 const addLike = async (req, res) => {
-  const { userId, feedId, commentId } = req.body;
+  const { feedId } = req.params;
+  const { userId, commentId } = req.body;
   const transaction = await sequelize.transaction();
 
   try {
@@ -448,7 +450,7 @@ const addLike = async (req, res) => {
 };
 
 const getLikes = async (req, res) => {
-  const feedId = req.query.feedId ? parseInt(req.query.feedId) : null;
+  const { feedId } = req.params;
   const commentId = req.query.commentId ? parseInt(req.query.commentId) : null;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
@@ -475,7 +477,8 @@ const getLikes = async (req, res) => {
 };
 
 const addComment = async (req, res) => {
-  const { feedId, userId, comment, mentionIds, parentId } = req.body;
+  const { feedId } = req.params;
+  const { userId, comment, mentionIds, parentId } = req.body;
   const transaction = await sequelize.transaction();
   try {
     const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
@@ -553,7 +556,7 @@ const addComment = async (req, res) => {
   }
 };
 const getComments = async (req, res) => {
-  const feedId = parseInt(req.query.feedId);
+  const { feedId } = req.params;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
@@ -644,7 +647,7 @@ const getComments = async (req, res) => {
 };
 
 const updateComment = async (req, res) => {
-  const { id } = req.params;
+  const { commentId } = req.params;
   const { comment, mentionIds } = req.body;
 
   const transaction = await sequelize.transaction();
@@ -654,7 +657,7 @@ const updateComment = async (req, res) => {
 
     const updatedComment = await Comments.update(
       { comment },
-      { where: { id }, transaction }
+      { where: { id: commentId }, transaction }
     );
     if (!updatedComment) {
       await transaction, rollback();
@@ -690,7 +693,7 @@ const updateComment = async (req, res) => {
           where: {
             userId: mentionsToRemove,
             type: "mention",
-            commentId: id,
+            commentId,
           },
           transaction,
         });
@@ -699,7 +702,7 @@ const updateComment = async (req, res) => {
       if (mentionsToAdd.length > 0) {
         const newFeedMentions = mentionsToAdd.map((userId) => ({
           userId,
-          commentId: id,
+          commentId,
         }));
         await FeedMentions.bulkCreate(newFeedMentions, { transaction });
 
@@ -730,10 +733,10 @@ const updateComment = async (req, res) => {
 };
 
 const deleteComment = async (req, res) => {
-  const { id } = req.params;
+  const { commentId } = req.params;
 
   try {
-    const deletedComment = await Comments.destroy({ where: { id } });
+    const deletedComment = await Comments.destroy({ where: { id: commentId } });
 
     if (deletedComment) {
       res.status(200).json({ message: "Deleted Comment successfully" });

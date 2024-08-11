@@ -40,10 +40,3 @@ const Communities = sequelize.define(
 );
 
 module.exports = Communities;
-
-// static associate(models) {
-//   Communities.belongsToMany(models.User,{
-//     through: models.userCommunity,
-//     foreignKey:'communityId'
-//   });
-// }
