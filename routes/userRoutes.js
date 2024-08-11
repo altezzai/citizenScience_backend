@@ -8,28 +8,43 @@ const upload = require("../config/uploadConfig");
 
 const router = express.Router();
 
-router.post("/addFeed", upload.single("file"), feedController.addFeed);
+router.post("/feeds", upload.array("files", 10), feedController.addFeed);
 router.get("/feeds", feedController.getFeeds);
-router.get("/feed/:feedId", feedController.getFeed);
-router.post("/updateFeed/:id", feedController.updateFeed);
-router.post("/deleteFeed/:id", feedController.deleteFeed);
-router.post("/addLike", feedController.addLike);
-router.get("/likes", feedController.getLikes);
-router.post("/addComment", feedController.addComment);
-router.get("/comments", feedController.getComments);
-router.post("/updateComment/:id", feedController.updateComment);
-router.post("/deleteComment/:id", feedController.deleteComment);
-router.post("/saveFeed", feedController.saveFeed);
-router.get("/savedFeeds", feedController.getSavedFeeds);
+router.get("/feeds/:feedId", feedController.getFeed);
+router.put("/feeds/:id", feedController.updateFeed);
+router.delete("/feeds/:id", feedController.deleteFeed);
+
+router.post("/feeds/:feedId/likes", feedController.addLike);
+router.get("/feeds/:feedId/likes", feedController.getLikes);
+
+router.post("/feeds/:feedId/comments", feedController.addComment);
+router.get("/feeds/:feedId/comments", feedController.getComments);
+router.put("/feeds/:feedId/comments/:commentId", feedController.updateComment);
+router.delete(
+  "/feeds/:feedId/comments/:commentId",
+  feedController.deleteComment
+);
+
+router.post("/saved-feeds", feedController.saveFeed);
+router.get("/saved-feeds", feedController.getSavedFeeds);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);
 router.get("/followings", connectionController.followings);
 
-router.get("/notifications", notificationController.notifications);
-router.get("/notify", notificationController.getUserNotifications);
+// router.get("/notifications", notificationController.notifications);
+router.get("/notifications", notificationController.getUserNotifications);
+router.put(
+  "/notifications/:notificationId/mark-read",
+  notificationController.markNotificationAsRead
+);
 
-//chat section
-router.post("/icon", upload.single("file"), chatController.fileUpload);
+// chat section
+router.post("/chat/icon", upload.single("file"), chatController.iconUpload);
+router.post(
+  "/chat/media",
+  upload.array("files", 10),
+  chatController.mediaUpload
+);
 
 module.exports = router;

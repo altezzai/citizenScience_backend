@@ -30,7 +30,14 @@ module.exports = {
         onUpdate: "CASCADE",
       },
       mediaUrl: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
+        get() {
+          const rawValue = this.getDataValue("mediaUrl");
+          return rawValue ? JSON.parse(rawValue) : [];
+        },
+        set(value) {
+          this.setDataValue("mediaUrl", JSON.stringify(value));
+        },
       },
       content: {
         type: Sequelize.TEXT,

@@ -22,6 +22,7 @@ const Chats = sequelize.define(
     },
     createdBy: {
       type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
         model: "Users",
         key: "id",

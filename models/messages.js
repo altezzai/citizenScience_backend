@@ -36,7 +36,14 @@ const Messages = sequelize.define(
       onUpdate: "CASCADE",
     },
     mediaUrl: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
+      get() {
+        const rawValue = this.getDataValue("mediaUrl");
+        return rawValue ? JSON.parse(rawValue) : [];
+      },
+      set(value) {
+        this.setDataValue("mediaUrl", JSON.stringify(value));
+      },
     },
     content: {
       type: DataTypes.TEXT,
@@ -81,7 +88,7 @@ const Messages = sequelize.define(
 );
 
 Chats.hasMany(Messages, { foreignKey: "chatId" });
-Messages.belongsTo(Chats, { foreignKey: "chatId"});
+Messages.belongsTo(Chats, { foreignKey: "chatId" });
 
 Messages.hasMany(Messages, { foreignKey: "replyToId" });
 Messages.belongsTo(Messages, { foreignKey: "replyToId", as: "replyTo" });

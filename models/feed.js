@@ -19,7 +19,14 @@ const Feed = sequelize.define(
       type: DataTypes.INTEGER,
     },
     fileName: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
+      get() {
+        const rawValue = this.getDataValue("fileName");
+        return rawValue ? JSON.parse(rawValue) : [];
+      },
+      set(value) {
+        this.setDataValue("fileName", JSON.stringify(value));
+      },
     },
     link: {
       type: DataTypes.STRING,

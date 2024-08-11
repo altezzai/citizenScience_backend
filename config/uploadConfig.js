@@ -26,4 +26,12 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-module.exports = upload;
+// const uploadMultiple = upload.array("files", 10);
+
+module.exports = {
+  single: upload.single.bind(upload),
+  array: upload.array.bind(upload),
+  fields: upload.fields.bind(upload),
+  none: upload.none.bind(upload),
+  any: upload.any.bind(upload),
+};
