@@ -17,6 +17,11 @@ module.exports = (io, socket) => {
 
   socket.on("deleteChat", chatHandlers.deleteChat(io, socket));
 
+  socket.on(
+    "getUserConversations",
+    chatHandlers.getUserConversations(io, socket)
+  );
+
   //message section
 
   socket.on("sendMessage", messageHandlers.sendMessage(io, socket));
