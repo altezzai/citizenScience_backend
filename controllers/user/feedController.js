@@ -555,6 +555,7 @@ const addComment = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 const getComments = async (req, res) => {
   const { feedId } = req.params;
   const page = parseInt(req.query.page) || 1;
@@ -567,7 +568,18 @@ const getComments = async (req, res) => {
       limit,
       where: { feedId, parentId: null },
       order: [["createdAt", "DESC"]],
-
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM Comments AS Replies
+              WHERE Replies.parentId = Comments.id
+            )`),
+            "replyCount",
+          ],
+        ],
+      },
       include: [
         {
           model: User,
@@ -590,7 +602,6 @@ const getComments = async (req, res) => {
           as: "Replies",
           attributes: ["comment", "likeCount", "parentId"],
           order: [["createdAt", "ASC"]],
-
           include: [
             {
               model: User,
@@ -608,37 +619,11 @@ const getComments = async (req, res) => {
                 },
               ],
             },
-            {
-              model: Comments,
-              as: "NestedReplies",
-              attributes: ["comment", "likeCount", "parentId"],
-
-              order: [["createdAt", "ASC"]],
-
-              include: [
-                {
-                  model: User,
-                  as: "NestedReplyUser",
-                  attributes: ["id", "username", "profilePhoto"],
-                },
-                {
-                  model: FeedMentions,
-                  attributes: ["id"],
-                  order: [["createdAt", "ASC"]],
-                  include: [
-                    {
-                      model: User,
-                      attributes: ["id", "username", "profilePhoto"],
-                    },
-                  ],
-                },
-                //if going deeper replies add
-              ],
-            },
           ],
         },
       ],
     });
+
     res.status(200).json(comments);
   } catch (error) {
     console.error("Error retrieving comments:", error);

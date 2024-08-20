@@ -35,7 +35,7 @@ router.get("/followings", connectionController.followings);
 // router.get("/notifications", notificationController.notifications);
 router.get("/notifications", notificationController.getUserNotifications);
 router.put(
-  "/notifications/:notificationId/mark-read",
+  "/notifications/:notificationId",
   notificationController.markNotificationAsRead
 );
 

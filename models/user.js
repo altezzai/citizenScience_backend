@@ -70,9 +70,9 @@ SavedFeeds.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(Comments, { foreignKey: "userId", as: "Comments" });
 Comments.belongsTo(User, { foreignKey: "userId", as: "CommentUser" });
-User.hasMany(Comments, { foreignKey: "userId", as: "NestedReplies" });
+// User.hasMany(Comments, { foreignKey: "userId", as: "NestedReplies" });
 Comments.belongsTo(User, { foreignKey: "userId", as: "ReplyUser" });
-Comments.belongsTo(User, { foreignKey: "userId", as: "NestedReplyUser" });
+// Comments.belongsTo(User, { foreignKey: "userId", as: "NestedReplyUser" });
 
 User.hasMany(Followers, { foreignKey: "followerId", as: "Followers" });
 Followers.belongsTo(User, { foreignKey: "followerId", as: "FollowerDetails" });
