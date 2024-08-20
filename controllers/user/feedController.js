@@ -1,4 +1,4 @@
-const { where } = require("sequelize");
+const { Op } = require("sequelize");
 const sequelize = require("../../config/connection");
 const Feed = require("../../models/feed");
 const Like = require("../../models/like");
@@ -375,73 +375,136 @@ const deleteFeed = async (req, res) => {
 };
 
 const addLike = async (req, res) => {
-  const { feedId } = req.params;
-  const { userId, commentId } = req.body;
+  const { userId, feedIds = [], commentIds = [] } = req.body;
   const transaction = await sequelize.transaction();
 
   try {
-    let target;
-    let content;
-    if (feedId) {
-      target = await Feed.findByPk(feedId, { transaction });
-      if (!target) {
-        throw new Error("Feed not Found");
-      }
-      content = "liked your feed";
-    } else if (commentId) {
-      target = await Comments.findByPk(commentId, { transaction });
-      if (!target) {
-        throw new Error("Comment not Found");
-      }
-      content = "liked your comment";
-    } else {
-      throw new Error("Either feedId or commentId must be provided");
-    }
-
-    const existingLike = await Like.findOne({
-      where: { userId, feedId: feedId || null, commentId: commentId || null },
+    const existingFeeds = await Feed.findAll({
+      where: {
+        id: {
+          [Op.in]: feedIds,
+        },
+      },
       transaction,
     });
 
-    if (existingLike) {
-      await Like.destroy({
-        where: { userId, feedId: feedId || null, commentId: commentId || null },
+    const existingComments = await Comments.findAll({
+      where: {
+        id: {
+          [Op.in]: commentIds,
+        },
+      },
+      transaction,
+    });
+
+    const existingFeedIds = existingFeeds.map((feed) => feed.id);
+    const existingCommentIds = existingComments.map((comment) => comment.id);
+
+    const invalidFeedIds = feedIds.filter(
+      (id) => !existingFeedIds.includes(id)
+    );
+    const invalidCommentIds = commentIds.filter(
+      (id) => !existingCommentIds.includes(id)
+    );
+
+    const actions = [];
+
+    for (const feedId of existingFeedIds) {
+      const target = existingFeeds.find((feed) => feed.id === feedId);
+
+      const existingLike = await Like.findOne({
+        where: { userId, feedId },
         transaction,
       });
-      target.likeCount -= 1;
-      await Notifications.destroy({
-        where: {
-          userId: target.userId,
-          actorId: userId,
-          type: "like",
-          feedId: feedId || null,
-          commentId: commentId || null,
-        },
-        transaction,
-      });
-    } else {
-      await Like.create({ userId, feedId, commentId }, { transaction });
-      target.likeCount += 1;
-      await Notifications.create(
-        {
-          userId: target.userId,
-          actorId: userId,
-          type: "like",
-          content: content,
-          feedId: feedId || null,
-          commentId: commentId || null,
-          actionURL: `/feed/${feedId}`,
-          priority: "low",
-        },
-        { transaction }
-      );
+
+      if (existingLike) {
+        await Like.destroy({ where: { userId, feedId }, transaction });
+        target.likeCount -= 1;
+        await Notifications.destroy({
+          where: {
+            userId: target.userId,
+            actorId: userId,
+            type: "like",
+            feedId,
+          },
+          transaction,
+        });
+        actions.push(`Like removed from feed ${feedId}`);
+      } else {
+        await Like.create({ userId, feedId }, { transaction });
+        target.likeCount += 1;
+        await Notifications.create(
+          {
+            userId: target.userId,
+            actorId: userId,
+            type: "like",
+            content: "liked your feed",
+            feedId,
+            actionURL: `/feed/${feedId}`,
+            priority: "low",
+          },
+          { transaction }
+        );
+        actions.push(`Like added to feed ${feedId}`);
+      }
+
+      await target.save({ transaction });
     }
-    await target.save({ transaction });
+
+    for (const commentId of existingCommentIds) {
+      const target = existingComments.find(
+        (comment) => comment.id === commentId
+      );
+
+      const existingLike = await Like.findOne({
+        where: { userId, commentId },
+        transaction,
+      });
+
+      if (existingLike) {
+        await Like.destroy({ where: { userId, commentId }, transaction });
+        target.likeCount -= 1;
+        await Notifications.destroy({
+          where: {
+            userId: target.userId,
+            actorId: userId,
+            type: "like",
+            commentId,
+          },
+          transaction,
+        });
+        actions.push(`Like removed from comment ${commentId}`);
+      } else {
+        await Like.create({ userId, commentId }, { transaction });
+        target.likeCount += 1;
+        await Notifications.create(
+          {
+            userId: target.userId,
+            actorId: userId,
+            type: "like",
+            content: "liked your comment",
+            commentId,
+            actionURL: `/feed/${target.feedId}`,
+            priority: "low",
+          },
+          { transaction }
+        );
+        actions.push(`Like added to comment ${commentId}`);
+      }
+
+      await target.save({ transaction });
+    }
 
     await transaction.commit();
-    res
-      .status(200)
-      .json({ message: existingLike ? "Like Removed" : "Like added" });
+
+    res.status(200).json({
+      message: "Operation completed.",
+      actions,
+      invalidFeedIds: invalidFeedIds.length ? invalidFeedIds : undefined,
+      invalidCommentIds: invalidCommentIds.length
+        ? invalidCommentIds
+        : undefined,
+    });
   } catch (error) {
     await transaction.rollback();
     console.error("Error adding like:", error);
@@ -555,6 +618,7 @@ const addComment = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 const getComments = async (req, res) => {
   const { feedId } = req.params;
   const page = parseInt(req.query.page) || 1;
@@ -567,7 +631,18 @@ const getComments = async (req, res) => {
       limit,
       where: { feedId, parentId: null },
       order: [["createdAt", "DESC"]],
-
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM Comments AS Replies
+              WHERE Replies.parentId = Comments.id
+            )`),
+            "replyCount",
+          ],
+        ],
+      },
       include: [
         {
           model: User,
@@ -590,7 +665,6 @@ const getComments = async (req, res) => {
           as: "Replies",
           attributes: ["comment", "likeCount", "parentId"],
           order: [["createdAt", "ASC"]],
-
           include: [
             {
               model: User,
@@ -608,37 +682,11 @@ const getComments = async (req, res) => {
                 },
               ],
             },
-            {
-              model: Comments,
-              as: "NestedReplies",
-              attributes: ["comment", "likeCount", "parentId"],
-
-              order: [["createdAt", "ASC"]],
-
-              include: [
-                {
-                  model: User,
-                  as: "NestedReplyUser",
-                  attributes: ["id", "username", "profilePhoto"],
-                },
-                {
-                  model: FeedMentions,
-                  attributes: ["id"],
-                  order: [["createdAt", "ASC"]],
-                  include: [
-                    {
-                      model: User,
-                      attributes: ["id", "username", "profilePhoto"],
-                    },
-                  ],
-                },
-                //if going deeper replies add
-              ],
-            },
           ],
         },
       ],
     });
+
     res.status(200).json(comments);
   } catch (error) {
     console.error("Error retrieving comments:", error);
@@ -815,6 +863,72 @@ const getSavedFeeds = async (req, res) => {
   }
 };
 
+const updateCounts = async (req, res) => {
+  const { viewList, shareList } = req.body;
+
+  const transaction = await sequelize.transaction();
+  try {
+    const allFeedIds = [...new Set([...viewList, ...shareList])];
+
+    const existingFeeds = await Feed.findAll({
+      where: {
+        id: {
+          [Op.in]: allFeedIds,
+        },
+      },
+      attributes: ["id"],
+      transaction,
+    });
+
+    const existingFeedIds = existingFeeds.map((feed) => feed.id);
+
+    const nonExistingFeedIds = allFeedIds.filter(
+      (id) => !existingFeedIds.includes(id)
+    );
+
+    if (nonExistingFeedIds.length > 0) {
+      console.error("The following feedIds do not exist:", nonExistingFeedIds);
+    }
+
+    const validViewList = viewList.filter((id) => existingFeedIds.includes(id));
+    const validShareList = shareList.filter((id) =>
+      existingFeedIds.includes(id)
+    );
+
+    if (validViewList.length > 0) {
+      await Feed.increment("viewsCount", {
+        by: 1,
+        where: {
+          id: validViewList,
+        },
+        transaction,
+      });
+    }
+
+    if (validShareList.length > 0) {
+      await Feed.increment("shareCount", {
+        by: 1,
+        where: {
+          id: validShareList,
+        },
+        transaction,
+      });
+    }
+
+    await transaction.commit();
+
+    res.status(200).json({
+      message:
+        "Views and shares updated successfully for the following feedIds:",
+      existingFeedIds,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("Error updating views and shares:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   addFeed,
   getFeeds,
@@ -829,4 +943,5 @@ module.exports = {
   deleteComment,
   saveFeed,
   getSavedFeeds,
+  updateCounts,
 };

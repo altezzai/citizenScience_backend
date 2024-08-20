@@ -14,8 +14,10 @@ router.get("/feeds/:feedId", feedController.getFeed);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
 
-router.post("/feeds/:feedId/likes", feedController.addLike);
+router.post("/feeds/likes", feedController.addLike);
 router.get("/feeds/:feedId/likes", feedController.getLikes);
+
+router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/:feedId/comments", feedController.addComment);
 router.get("/feeds/:feedId/comments", feedController.getComments);
@@ -35,7 +37,7 @@ router.get("/followings", connectionController.followings);
 // router.get("/notifications", notificationController.notifications);
 router.get("/notifications", notificationController.getUserNotifications);
 router.put(
-  "/notifications/:notificationId/mark-read",
+  "/notifications/:notificationId",
   notificationController.markNotificationAsRead
 );
 

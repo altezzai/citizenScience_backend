@@ -271,154 +271,7 @@ exports.deleteChat =
 
 exports.getUserConversations =
   (io, socket) =>
-  async ({ userId }) => {
-    try {
-      // Fetch all conversations including deleted chats
-      const conversations = await Chats.findAll({
-        include: [
-          {
-            model: DeletedChats,
-            where: { userId },
-            required: false, // Left join to include chats not deleted by the user
-          },
-          {
-            model: Messages,
-            include: [
-              {
-                model: User,
-                as: "sender",
-                attributes: ["id", "username"],
-              },
-            ],
-            order: [["createdAt", "DESC"]],
-          },
-        ],
-        where: {
-          id: {
-            [Op.in]: Sequelize.literal(
-              `(SELECT chatId FROM ChatMembers WHERE userId = ${userId})`
-            ),
-          },
-        },
-        order: [["updatedAt", "DESC"]],
-      });
-
-      // Fetch deleted messages for the user
-      const deletedMessages = await DeletedMessages.findAll({
-        where: { userId },
-        attributes: ["messageId"],
-      });
-
-      const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
-
-      console.log(
-        "Fetched Conversations:",
-        JSON.stringify(conversations, null, 2)
-      ); // Debugging output
-
-      // Filter out conversations and messages based on deletion criteria
-      const filteredConversations = conversations
-        .map((conversation) => {
-          // Filter out messages deleted for everyone or deleted for the user
-          const validMessages = conversation.Messages.filter((message) => {
-            // Exclude messages that are deleted for everyone or are in deletedMessages for the user
-            return (
-              !message.deleteForEveryone &&
-              !deletedMessageIds.includes(message.id)
-            );
-          });
-
-          // Get the last valid message if available
-          const lastMessage =
-            validMessages.length > 0 ? validMessages[0] : null;
-
-          // Include if the conversation has no deleted record or if the last valid message is after deletion
-          const isDeletedChat = conversation.DeletedChats.length > 0;
-          const lastValidMessageDate = lastMessage
-            ? lastMessage.createdAt
-            : new Date(0);
-          const deletedChatDate = isDeletedChat
-            ? conversation.DeletedChats[0].deletedAt
-            : new Date(0);
-
-          if (!isDeletedChat || lastValidMessageDate > deletedChatDate) {
-            return {
-              chatId: conversation.id,
-              name: conversation.name,
-              type: conversation.type,
-              lastMessage: lastMessage
-                ? {
-                    id: lastMessage.id,
-                    content: lastMessage.content,
-                    senderId: lastMessage.senderId,
-                    senderUsername: lastMessage.sender
-                      ? lastMessage.sender.username
-                      : null,
-                    status:
-                      lastMessage.senderId === userId
-                        ? lastMessage.overallStatus
-                        : null,
-                    createdAt: lastMessage.createdAt,
-                  }
-                : null,
-              unreadMessagesCount: 0, // Placeholder, will be updated later
-            };
-          }
-          return null;
-        })
-        .filter((convo) => convo !== null); // Remove null entries
-
-      console.log(
-        "Filtered Conversations:",
-        JSON.stringify(filteredConversations, null, 2)
-      );
-
-      // Count unread messages for each conversation
-      const result = await Promise.all(
-        filteredConversations.map(async (conversation) => {
-          // Count unread messages in this conversation for the user
-          const unreadMessagesCount = await MessageStatuses.count({
-            include: [
-              {
-                model: Messages,
-                attributes: [],
-                where: {
-                  chatId: conversation.chatId,
-                  createdAt: {
-                    [Op.gt]: conversation.lastMessage
-                      ? conversation.lastMessage.createdAt
-                      : new Date(0),
-                  },
-                  deleteForEveryone: false, // Only include messages not deleted for everyone
-                },
-              },
-            ],
-            where: {
-              userId: userId,
-              status: "unread",
-            },
-          });
-
-          return {
-            ...conversation,
-            unreadMessagesCount,
-          };
-        })
-      );
-
-      console.log("Final Result:", JSON.stringify(result, null, 2));
-
-      // Return the result
-      socket.emit("userConversations", { userId, conversations: result });
-    } catch (error) {
-      console.error("Error fetching user conversations:", error);
-      socket.emit("error", "Failed to fetch user conversations.");
-    }
-  };
-
-exports.getUserConversations =
-  (io, socket) =>
-  async ({ userId }) => {
+  async ({ userId, type }) => {
     try {
       const conversations = await Chats.findAll({
         include: [
@@ -454,6 +307,7 @@ exports.getUserConversations =
               `(SELECT chatId FROM ChatMembers WHERE userId = ${userId})`
             ),
           },
+          type: type,
         },
         order: [["updatedAt", "DESC"]],
       });
@@ -544,7 +398,9 @@ exports.getUserConversations =
             ],
             where: {
               userId: userId,
-              status: "unread",
+              status: {
+                [Op.in]: ["sent", "received"],
+              },
             },
           });
 
