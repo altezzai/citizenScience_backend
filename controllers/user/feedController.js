@@ -149,9 +149,24 @@ const getFeeds = async (req, res) => {
             },
           ],
         },
+        {
+          model: Like,
+          attributes: ["id"],
+          where: {
+            userId: userId,
+          },
+          required: false,
+        },
       ],
     });
-    res.status(200).json(feeds);
+
+    const processedFeeds = feeds.map((feed) => {
+      return {
+        ...feed.toJSON(),
+        likedByUser: feed.Likes.length > 0,
+      };
+    });
+    res.status(200).json(processedFeeds);
   } catch (error) {
     console.error("Error fetching feeds:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -160,7 +175,7 @@ const getFeeds = async (req, res) => {
 
 const getFeed = async (req, res) => {
   const { feedId } = req.params;
-  const page = parseInt(req.query.page) || 1;
+  const userId = parseInt(req.query.userId);
 
   try {
     const feed = await Feed.findByPk(feedId, {
@@ -190,12 +205,25 @@ const getFeed = async (req, res) => {
             },
           ],
         },
+        {
+          model: Like,
+          attributes: ["id"],
+          where: {
+            userId: userId,
+          },
+          required: false,
+        },
       ],
     });
     if (!feed) {
       return res.status(404).json({ message: "Feed not found" });
     }
-    res.status(200).json(feed);
+
+    const feedWithLikeStatus = {
+      ...feed.toJSON(),
+      likedByUser: feed.Likes.length > 0,
+    };
+    res.status(200).json(feedWithLikeStatus);
   } catch (error) {
     console.error("Error fetching feed:", error);
     res.status(500).json({ error: "Internal Server Error" });
