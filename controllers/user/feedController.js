@@ -176,6 +176,9 @@ const getFeeds = async (req, res) => {
 const getFeed = async (req, res) => {
   const { feedId } = req.params;
   const userId = parseInt(req.query.userId);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = (page - 1) * limit;
 
   try {
     const feed = await Feed.findByPk(feedId, {
@@ -219,10 +222,49 @@ const getFeed = async (req, res) => {
       return res.status(404).json({ message: "Feed not found" });
     }
 
+    const comments = await Comments.findAll({
+      offset,
+      limit,
+      where: { feedId, parentId: null },
+      order: [["createdAt", "DESC"]],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM Comments AS Replies
+              WHERE Replies.parentId = Comments.id
+            )`),
+            "replyCount",
+          ],
+        ],
+      },
+      include: [
+        {
+          model: User,
+          as: "CommentUser",
+          attributes: ["username", "profilePhoto"],
+        },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          order: [["createdAt", "ASC"]],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username", "profilePhoto"],
+            },
+          ],
+        },
+      ],
+    });
+
     const feedWithLikeStatus = {
       ...feed.toJSON(),
       likedByUser: feed.Likes.length > 0,
+      comments: comments,
     };
+
     res.status(200).json(feedWithLikeStatus);
   } catch (error) {
     console.error("Error fetching feed:", error);
@@ -722,6 +764,46 @@ const getComments = async (req, res) => {
   }
 };
 
+const getReplies = async (req, res) => {
+  const { feedId, commentId } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 30;
+  const offset = (page - 1) * limit;
+
+  try {
+    const comments = await Comments.findAll({
+      offset,
+      limit,
+      where: { feedId, parentId: commentId },
+      order: [["createdAt", "DESC"]],
+
+      include: [
+        {
+          model: User,
+          as: "CommentUser",
+          attributes: ["username", "profilePhoto"],
+        },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          order: [["createdAt", "ASC"]],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username", "profilePhoto"],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json(comments);
+  } catch (error) {
+    console.error("Error retrieving comments:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const updateComment = async (req, res) => {
   const { commentId } = req.params;
   const { comment, mentionIds } = req.body;
@@ -967,6 +1049,7 @@ module.exports = {
   getLikes,
   addComment,
   getComments,
+  getReplies,
   updateComment,
   deleteComment,
   saveFeed,

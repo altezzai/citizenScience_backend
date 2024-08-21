@@ -21,6 +21,7 @@ router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/:feedId/comments", feedController.addComment);
 router.get("/feeds/:feedId/comments", feedController.getComments);
+router.get("/feeds/:feedId/comments/:commentId", feedController.getReplies);
 router.put("/feeds/:feedId/comments/:commentId", feedController.updateComment);
 router.delete(
   "/feeds/:feedId/comments/:commentId",
