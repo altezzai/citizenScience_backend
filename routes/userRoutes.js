@@ -4,6 +4,7 @@ const feedController = require("../controllers/user/feedController");
 const connectionController = require("../controllers/user/connectionController");
 const notificationController = require("../controllers/user/notificationController");
 const chatController = require("../controllers/user/chatController");
+const searchController = require("../controllers/user/searchController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -49,5 +50,9 @@ router.post(
   upload.array("files", 10),
   chatController.mediaUpload
 );
+
+//search section
+
+router.get("/chat/:chatId/member", searchController.searchMembers);
 
 module.exports = router;
