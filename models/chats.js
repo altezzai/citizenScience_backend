@@ -33,6 +33,10 @@ const Chats = sequelize.define(
     icon: {
       type: DataTypes.STRING,
     },
+    description: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
     createdAt: {
       allowNull: false,
       type: DataTypes.DATE,

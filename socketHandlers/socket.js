@@ -22,6 +22,9 @@ module.exports = (io, socket) => {
     chatHandlers.getUserConversations(io, socket)
   );
 
+  //chat details for group and community
+  socket.on("getChatDetails", chatHandlers.getChatDetails(io, socket));
+
   //message section
 
   socket.on("sendMessage", messageHandlers.sendMessage(io, socket));
