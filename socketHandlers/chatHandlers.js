@@ -16,6 +16,7 @@ exports.createChat =
     name,
     createdBy,
     icon,
+    description,
     members,
     initialMessage,
     mediaUrl,
@@ -74,6 +75,7 @@ exports.createChat =
           name,
           createdBy,
           icon,
+          description,
         },
         { transaction }
       );
@@ -134,7 +136,7 @@ exports.createChat =
 
 exports.updateChat =
   (io, socket) =>
-  async ({ chatId, name, icon, userId }) => {
+  async ({ chatId, name, icon, description, userId }) => {
     const transaction = await sequelize.transaction();
 
     try {
@@ -179,7 +181,10 @@ exports.updateChat =
         content = `${user.username} changed the chat icon.`;
       }
 
-      const updatedChat = await chat.update({ name, icon }, { transaction });
+      const updatedChat = await chat.update(
+        { name, icon, description },
+        { transaction }
+      );
 
       const updateMessage = await Messages.create(
         {
@@ -417,5 +422,52 @@ exports.getUserConversations =
     } catch (error) {
       console.error("Error fetching user conversations:", error);
       socket.emit("error", "Failed to fetch user conversations.");
+    }
+  };
+
+exports.getChatDetails =
+  (io, socket) =>
+  async ({ chatId }) => {
+    try {
+      const chat = await Chats.findOne({
+        where: {
+          id: chatId,
+          type: { [Op.in]: ["group", "community"] },
+        },
+        attributes: ["id", "type", "name", "icon", "description"],
+      });
+
+      if (!chat) {
+        socket.emit("error", "Chat not found or not a group/community.");
+        return;
+      }
+
+      const members = await ChatMembers.findAll({
+        where: { chatId },
+        include: [
+          {
+            model: User,
+            attributes: ["id", "username", "profilePhoto"],
+          },
+        ],
+      });
+
+      const memberDetails = members.map((member) => ({
+        userId: member.userId,
+        username: member.User.username,
+        profilePhoto: member.User.profilePhoto,
+        isAdmin: member.isAdmin,
+      }));
+
+      socket.emit("chatDetails", {
+        chatId: chat.id,
+        chatName: chat.name,
+        chatIcon: chat.icon,
+        chatDescription: chat.description,
+        members: memberDetails,
+      });
+    } catch (error) {
+      console.error("Error fetching chat details:", error);
+      socket.emit("error", "Failed to fetch chat details.");
     }
   };
