@@ -9,6 +9,7 @@ const notificationController = require("../controllers/user/notificationControll
 const chatController = require("../controllers/user/chatController");
 const searchController = require("../controllers/user/searchController");
 const interestController = require("../controllers/user/interestController");
+const skillController = require("../controllers/user/skillController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -62,6 +63,10 @@ router.post(
 //Interest section
 router.post("/profile/:userId/interest", interestController.addInterest);
 router.put("/profile/:userId/interest", interestController.updateUserInterests);
+
+//Skill section
+router.post("/profile/:userId/skill", skillController.addSkills);
+router.put("/profile/:userId/skill", skillController.updateUserSkills);
 
 //search section
 router.get("/search/user", searchController.searchUsers);
