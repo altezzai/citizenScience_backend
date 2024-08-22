@@ -10,6 +10,7 @@ const chatController = require("../controllers/user/chatController");
 const searchController = require("../controllers/user/searchController");
 const interestController = require("../controllers/user/interestController");
 const skillController = require("../controllers/user/skillController");
+const experienceController = require("../controllers/user/experienceController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -62,11 +63,18 @@ router.post(
 
 //Interest section
 router.post("/profile/:userId/interest", interestController.addInterest);
+router.get("/profile/:userId/interest", interestController.getUserInterests);
 router.put("/profile/:userId/interest", interestController.updateUserInterests);
 
 //Skill section
 router.post("/profile/:userId/skill", skillController.addSkills);
+router.get("/profile/:userId/skill", skillController.getUserSkills);
 router.put("/profile/:userId/skill", skillController.updateUserSkills);
+
+//Experience section
+router.post("/profile/:userId/experience", experienceController.addExperience);
+router.get("/profile/:userId/experience", experienceController.getExperiences);
+router.put("/profile/experience/:id", experienceController.updateExperience);
 
 //search section
 router.get("/search/user", searchController.searchUsers);

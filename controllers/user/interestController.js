@@ -51,6 +51,26 @@ const addInterest = async (req, res) => {
   }
 };
 
+const getUserInterests = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userInterests = await UserInterests.findAll({
+      where: { userId },
+      attributes: [],
+      include: [
+        {
+          model: Interests,
+          attributes: ["id", "interest"],
+        },
+      ],
+    });
+    res.status(200).json(userInterests);
+  } catch (error) {
+    console.error("Error fetching user interests", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const updateUserInterests = async (req, res) => {
   const { userId } = req.params;
   const { interestList } = req.body;
@@ -131,5 +151,6 @@ const updateUserInterests = async (req, res) => {
 
 module.exports = {
   addInterest,
+  getUserInterests,
   updateUserInterests,
 };

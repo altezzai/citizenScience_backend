@@ -48,6 +48,26 @@ const addSkills = async (req, res) => {
   }
 };
 
+const getUserSkills = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userSkills = await UserSkills.findAll({
+      where: { userId },
+      attributes: [],
+      include: [
+        {
+          model: Skills,
+          attributes: ["id", "skill"],
+        },
+      ],
+    });
+    res.status(200).json(userSkills);
+  } catch (error) {
+    console.error("Error fetching user skills", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const updateUserSkills = async (req, res) => {
   const { userId } = req.params;
   const { skillList } = req.body;
@@ -123,5 +143,6 @@ const updateUserSkills = async (req, res) => {
 
 module.exports = {
   addSkills,
+  getUserSkills,
   updateUserSkills,
 };
