@@ -54,5 +54,6 @@ router.post(
 //search section
 
 router.get("/chat/:chatId/member", searchController.searchMembers);
+router.get("/chat", searchController.searchConversations);
 
 module.exports = router;
