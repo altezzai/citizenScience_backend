@@ -12,6 +12,7 @@ const router = express.Router();
 router.post("/feeds", upload.array("files", 10), feedController.addFeed);
 router.get("/feeds", feedController.getFeeds);
 router.get("/feeds/:feedId", feedController.getFeed);
+router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
 
@@ -54,5 +55,6 @@ router.post(
 //search section
 
 router.get("/chat/:chatId/member", searchController.searchMembers);
+router.get("/chat", searchController.searchConversations);
 
 module.exports = router;

@@ -272,6 +272,64 @@ const getFeed = async (req, res) => {
   }
 };
 
+const getUserFeeds = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  try {
+    const feeds = await Feed.findAll({
+      offset,
+      limit,
+      where: { userId: userId },
+      order: [["createdAt", "DESC"]],
+      include: [
+        { model: User, attributes: ["id", "username", "profilePhoto"] },
+        {
+          model: FeedMentions,
+          attributes: ["id"],
+          include: [
+            {
+              model: User,
+              attributes: ["id", "username"],
+            },
+          ],
+        },
+        {
+          model: PostHashtags,
+          attributes: ["hashtagId"],
+          include: [
+            {
+              model: Hashtags,
+              attributes: ["hashtag"],
+            },
+          ],
+        },
+        {
+          model: Like,
+          attributes: ["id"],
+          where: {
+            userId: userId,
+          },
+          required: false,
+        },
+      ],
+    });
+
+    const processedFeeds = feeds.map((feed) => {
+      return {
+        ...feed.toJSON(),
+        likedByUser: feed.Likes.length > 0,
+      };
+    });
+    res.status(200).json(processedFeeds);
+  } catch (error) {
+    console.error("Error fetching feeds:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const updateFeed = async (req, res) => {
   const { id } = req.params;
   const { link, description, mentionIds, hashTags } = req.body;
@@ -1043,6 +1101,7 @@ module.exports = {
   addFeed,
   getFeeds,
   getFeed,
+  getUserFeeds,
   updateFeed,
   deleteFeed,
   addLike,
