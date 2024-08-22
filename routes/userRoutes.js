@@ -11,6 +11,7 @@ const searchController = require("../controllers/user/searchController");
 const interestController = require("../controllers/user/interestController");
 const skillController = require("../controllers/user/skillController");
 const experienceController = require("../controllers/user/experienceController");
+const educationController = require("../controllers/user/educationController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -75,6 +76,13 @@ router.put("/profile/:userId/skill", skillController.updateUserSkills);
 router.post("/profile/:userId/experience", experienceController.addExperience);
 router.get("/profile/:userId/experience", experienceController.getExperiences);
 router.put("/profile/experience/:id", experienceController.updateExperience);
+router.delete("/profile/experience/:id", experienceController.deleteExperience);
+
+//Education section
+router.post("/profile/:userId/education", educationController.addEducation);
+router.get("/profile/:userId/education", educationController.getEducations);
+router.put("/profile/education/:id", educationController.updateEducation);
+router.delete("/profile/education/:id", educationController.deleteEducation);
 
 //search section
 router.get("/search/user", searchController.searchUsers);
