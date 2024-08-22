@@ -8,6 +8,7 @@ const connectionController = require("../controllers/user/connectionController")
 const notificationController = require("../controllers/user/notificationController");
 const chatController = require("../controllers/user/chatController");
 const searchController = require("../controllers/user/searchController");
+const interestController = require("../controllers/user/interestController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -57,6 +58,10 @@ router.post(
   upload.array("files", 10),
   chatController.mediaUpload
 );
+
+//Interest section
+router.post("/profile/:userId/interest", interestController.addInterest);
+router.put("/profile/:userId/interest", interestController.updateUserInterests);
 
 //search section
 router.get("/search/user", searchController.searchUsers);

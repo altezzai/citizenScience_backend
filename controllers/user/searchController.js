@@ -11,7 +11,7 @@ const Hashtags = require("../../models/hashtags");
 
 const searchUsers = async (req, res) => {
   const userId = parseInt(req.query.userId);
-  const searchQuery = req.query.search || "";
+  const searchQuery = req.query.search;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
@@ -87,7 +87,7 @@ const searchUsers = async (req, res) => {
 };
 
 const searchHashtags = async (req, res) => {
-  const searchQuery = req.query.q || "";
+  const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
