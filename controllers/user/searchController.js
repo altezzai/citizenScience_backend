@@ -7,6 +7,7 @@ const Chats = require("../../models/chats");
 const Messages = require("../../models/messages");
 const DeletedMessages = require("../../models/deletedmessages");
 const MessageStatuses = require("../../models/messagestatuses");
+const Hashtags = require("../../models/hashtags");
 
 const searchUsers = async (req, res) => {
   const userId = parseInt(req.query.userId);
@@ -81,6 +82,32 @@ const searchUsers = async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     console.error("Error searching users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const searchHashtags = async (req, res) => {
+  const searchQuery = req.query.q || "";
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  try {
+    const hashtags = await Hashtags.findAll({
+      where: {
+        hashtag: {
+          [Op.like]: `%${searchQuery}%`,
+        },
+      },
+      attributes: ["id", "hashtag", "usageCount"],
+      order: [["usageCount", "DESC"]],
+      limit,
+      offset,
+    });
+
+    res.status(200).json(hashtags);
+  } catch (error) {
+    console.error("Error searching hashtags:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -319,6 +346,7 @@ const searchConversations = async (req, res) => {
 
 module.exports = {
   searchUsers,
+  searchHashtags,
   searchMembers,
   searchConversations,
 };
