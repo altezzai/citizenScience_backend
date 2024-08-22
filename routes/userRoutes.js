@@ -1,6 +1,9 @@
 const express = require("express");
 
 const feedController = require("../controllers/user/feedController");
+const commentController = require("../controllers/user/commentController");
+const likeController = require("../controllers/user/likeController");
+const savedFeedsController = require("../controllers/user/savedFeedsController");
 const connectionController = require("../controllers/user/connectionController");
 const notificationController = require("../controllers/user/notificationController");
 const chatController = require("../controllers/user/chatController");
@@ -16,22 +19,25 @@ router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
 
-router.post("/feeds/likes", feedController.addLike);
-router.get("/feeds/:feedId/likes", feedController.getLikes);
+router.post("/feeds/likes", likeController.addLike);
+router.get("/feeds/:feedId/likes", likeController.getLikes);
 
 router.post("/feeds/updateCounts", feedController.updateCounts);
 
-router.post("/feeds/:feedId/comments", feedController.addComment);
-router.get("/feeds/:feedId/comments", feedController.getComments);
-router.get("/feeds/:feedId/comments/:commentId", feedController.getReplies);
-router.put("/feeds/:feedId/comments/:commentId", feedController.updateComment);
+router.post("/feeds/:feedId/comments", commentController.addComment);
+router.get("/feeds/:feedId/comments", commentController.getComments);
+router.get("/feeds/:feedId/comments/:commentId", commentController.getReplies);
+router.put(
+  "/feeds/:feedId/comments/:commentId",
+  commentController.updateComment
+);
 router.delete(
   "/feeds/:feedId/comments/:commentId",
-  feedController.deleteComment
+  commentController.deleteComment
 );
 
-router.post("/saved-feeds", feedController.saveFeed);
-router.get("/saved-feeds", feedController.getSavedFeeds);
+router.post("/saved-feeds", savedFeedsController.saveFeed);
+router.get("/saved-feeds", savedFeedsController.getSavedFeeds);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);
