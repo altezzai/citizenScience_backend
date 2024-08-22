@@ -26,6 +26,7 @@ const getExperiences = async (req, res) => {
   try {
     const experiences = await Experience.findAll({
       where: { userId },
+      attributes: ["id", "workspace", "position", "startDate", "endDate"],
       order: [["startDate", "DESC"]],
     });
     res.status(200).json(experiences);
