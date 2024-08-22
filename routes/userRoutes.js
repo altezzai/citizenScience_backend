@@ -59,7 +59,7 @@ router.post(
 );
 
 //search section
-
+router.get("/search",searchController.searchUsers);
 router.get("/chat/:chatId/member", searchController.searchMembers);
 router.get("/chat", searchController.searchConversations);
 
