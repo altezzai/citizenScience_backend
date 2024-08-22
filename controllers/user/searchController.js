@@ -8,6 +8,83 @@ const Messages = require("../../models/messages");
 const DeletedMessages = require("../../models/deletedmessages");
 const MessageStatuses = require("../../models/messagestatuses");
 
+const searchUsers = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const searchQuery = req.query.search || "";
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  try {
+    const followingMatches = await Followers.findAll({
+      where: {
+        followerId: userId,
+      },
+      include: [
+        {
+          model: User,
+          as: "FollowingDetails",
+          where: {
+            username: { [Op.like]: `%${searchQuery}%` },
+          },
+          attributes: ["id"],
+        },
+      ],
+    });
+
+    const followingIds = followingMatches.map((f) => f.followingId);
+
+    const followerMatches = await Followers.findAll({
+      where: {
+        followingId: userId,
+      },
+      include: [
+        {
+          model: User,
+          as: "FollowerDetails",
+          where: {
+            username: { [Op.like]: `%${searchQuery}%` },
+          },
+          attributes: ["id"],
+        },
+      ],
+    });
+
+    const followerIds = followerMatches.map((f) => f.followerId);
+
+    const otherMatches = await User.findAll({
+      where: {
+        username: { [Op.like]: `%${searchQuery}%` },
+        id: {
+          [Op.notIn]: [...followingIds, ...followerIds, userId],
+        },
+      },
+      attributes: ["id"],
+    });
+
+    const otherIds = otherMatches.map((u) => u.id);
+
+    const orderedIds = [...followingIds, ...followerIds, ...otherIds];
+
+    const users = await User.findAll({
+      where: {
+        id: {
+          [Op.in]: orderedIds,
+        },
+      },
+      attributes: ["id", "username", "profilePhoto"],
+      order: [sequelize.literal(`FIELD(id, ${orderedIds.join(",")})`)],
+      limit,
+      offset,
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const searchMembers = async (req, res) => {
   const { chatId } = req.params;
   const userId = parseInt(req.query.userId);
@@ -241,6 +318,7 @@ const searchConversations = async (req, res) => {
 };
 
 module.exports = {
+  searchUsers,
   searchMembers,
   searchConversations,
 };
