@@ -129,30 +129,6 @@ const getComments = async (req, res) => {
             },
           ],
         },
-        {
-          model: Comments,
-          as: "Replies",
-          attributes: ["comment", "likeCount", "parentId"],
-          order: [["createdAt", "ASC"]],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username", "profilePhoto"],
-              as: "ReplyUser",
-            },
-            {
-              model: FeedMentions,
-              attributes: ["id"],
-              order: [["createdAt", "ASC"]],
-              include: [
-                {
-                  model: User,
-                  attributes: ["id", "username", "profilePhoto"],
-                },
-              ],
-            },
-          ],
-        },
       ],
     });
 
