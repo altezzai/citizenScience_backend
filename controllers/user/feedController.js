@@ -157,6 +157,12 @@ const getFeeds = async (req, res) => {
           },
           required: false,
         },
+        {
+          model: SavedFeeds,
+          attributes: ["id"],
+          where: { userId: userId },
+          required: false,
+        },
       ],
     });
 
@@ -164,6 +170,7 @@ const getFeeds = async (req, res) => {
       return {
         ...feed.toJSON(),
         likedByUser: feed.Likes.length > 0,
+        savedByUser: feed.SavedFeeds.length > 0,
       };
     });
     res.status(200).json(processedFeeds);
@@ -216,6 +223,12 @@ const getFeed = async (req, res) => {
           },
           required: false,
         },
+        {
+          model: SavedFeeds,
+          attributes: ["id"],
+          where: { userId: userId },
+          required: false,
+        },
       ],
     });
     if (!feed) {
@@ -262,6 +275,7 @@ const getFeed = async (req, res) => {
     const feedWithLikeStatus = {
       ...feed.toJSON(),
       likedByUser: feed.Likes.length > 0,
+      savedByUser: feed.SavedFeeds.length > 0,
       comments: comments,
     };
 
@@ -314,6 +328,12 @@ const getUserFeeds = async (req, res) => {
           },
           required: false,
         },
+        {
+          model: SavedFeeds,
+          attributes: ["id"],
+          where: { userId: userId },
+          required: false,
+        },
       ],
     });
 
@@ -321,6 +341,7 @@ const getUserFeeds = async (req, res) => {
       return {
         ...feed.toJSON(),
         likedByUser: feed.Likes.length > 0,
+        savedByUser: feed.SavedFeeds.length > 0,
       };
     });
     res.status(200).json(processedFeeds);
