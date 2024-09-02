@@ -153,7 +153,6 @@ const getFeeds = async (req, res) => {
         {
           model: FeedMentions,
           attributes: [
-            "id",
             "userId",
             [
               Sequelize.literal(`(
