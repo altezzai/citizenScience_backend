@@ -1,4 +1,8 @@
-const sequelize = require("../../config/connection");
+const { Sequelize } = require("sequelize");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../../config/connection");
 const Interests = require("../../models/interests");
 const UserInterests = require("../../models/userinterests");
 
@@ -13,7 +17,7 @@ const addInterest = async (req, res) => {
       error: "Invalid interest list. Must be an array of non-empty strings.",
     });
   }
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     for (let interest of interestList) {
@@ -84,7 +88,7 @@ const updateUserInterests = async (req, res) => {
     });
   }
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const existingUserInterests = await UserInterests.findAll({

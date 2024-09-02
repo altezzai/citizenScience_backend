@@ -1,4 +1,4 @@
-const sequelize = require("../../config/connection");
+const { skrollsSequelize } = require("../../config/connection");
 
 const iconUpload = async (req, res) => {
   if (!req.file) {
