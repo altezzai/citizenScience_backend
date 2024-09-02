@@ -5,7 +5,6 @@ const {
 } = require("../../config/connection");
 const Feed = require("../../models/feed");
 const Like = require("../../models/like");
-const User = require("../../models/user");
 const Comments = require("../../models/comments");
 const FeedMentions = require("../../models/feedmentions");
 const upload = require("../../config/uploadConfig");
