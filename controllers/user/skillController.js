@@ -1,4 +1,4 @@
-const sequelize = require("../../config/connection");
+const { skrollsSequelize } = require("../../config/connection");
 const Skills = require("../../models/skills");
 const UserSkills = require("../../models/userskills");
 
@@ -10,7 +10,7 @@ const addSkills = async (req, res) => {
       error: "Invalid skill list. Must be an array of non-empty strings.",
     });
   }
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     for (let skill of skillList) {
@@ -78,7 +78,7 @@ const updateUserSkills = async (req, res) => {
     });
   }
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const existingUserSkills = await UserSkills.findAll({
