@@ -1,11 +1,15 @@
-const sequelize = require("../../config/connection");
+const { Sequelize } = require("sequelize");
+
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../../config/connection");
 const Feed = require("../../models/feed");
-const User = require("../../models/user");
 const SavedFeeds = require("../../models/savedfeeds");
 
 const saveFeed = async (req, res) => {
   const { userId, feedId } = req.body;
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const feed = await Feed.findByPk(feedId, { transaction });
@@ -53,15 +57,32 @@ const getSavedFeeds = async (req, res) => {
       include: [
         {
           model: Feed,
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username", "profilePhoto"],
-            },
-          ],
+          attributes: {
+            include: [
+              [
+                Sequelize.literal(`(
+                  SELECT username
+                  FROM repository.Users AS users
+                  WHERE users.id = Feed.userId
+                )`),
+                "username",
+              ],
+              [
+                Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = Feed.userId
+                )`),
+                "profilePhoto",
+              ],
+            ],
+          },
         },
       ],
     });
+    if (savedfeeds.length === 0) {
+      return res.status(404).json({ message: "No saved feeds found" });
+    }
     res.status(200).json({ feeds: savedfeeds });
   } catch (error) {
     console.error("Error retrieving Saved Feeds", error);

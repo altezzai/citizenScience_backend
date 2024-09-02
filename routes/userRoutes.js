@@ -39,8 +39,8 @@ router.delete(
   commentController.deleteComment
 );
 
-router.post("/saved-feeds", savedFeedsController.saveFeed);
-router.get("/saved-feeds", savedFeedsController.getSavedFeeds);
+router.post("/savedFeeds", savedFeedsController.saveFeed);
+router.get("/savedFeeds", savedFeedsController.getSavedFeeds);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);
