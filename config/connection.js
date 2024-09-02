@@ -2,16 +2,27 @@ const { Sequelize } = require("sequelize");
 const config = require("./config.json");
 
 const environment = process.env.NODE_ENV || "development";
-const dbConfig = config[environment];
+const skrollsConfig = config[environment];
+const repositoryConfig = config["repository"];
 
-const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
+const skrollsSequelize = new Sequelize(
+  skrollsConfig.database,
+  skrollsConfig.username,
+  skrollsConfig.password,
   {
-    host: dbConfig.host,
-    dialect: dbConfig.dialect,
+    host: skrollsConfig.host,
+    dialect: skrollsConfig.dialect,
   }
 );
 
-module.exports = sequelize;
+const repositorySequelize = new Sequelize(
+  repositoryConfig.database,
+  repositoryConfig.username,
+  repositoryConfig.password,
+  {
+    host: repositoryConfig.host,
+    dialect: repositoryConfig.dialect,
+  }
+);
+
+module.exports = { skrollsSequelize, repositorySequelize };

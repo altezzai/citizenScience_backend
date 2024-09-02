@@ -22,12 +22,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       comment: {
         type: Sequelize.STRING,
@@ -57,8 +51,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Comments
+      ADD CONSTRAINT fk_comments_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Comments
+      DROP FOREIGN KEY fk_comments_userId;
+    `);
     await queryInterface.dropTable("Comments");
   },
 };

@@ -1,6 +1,6 @@
 "use strict";
 const { Model, DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 const Comments = require("./comments");
 const Like = require("./like");
 const FeedMentions = require("./feedmentions");
@@ -9,7 +9,7 @@ const PostHashtags = require("./posthashtags");
 const Hashtags = require("./hashtags");
 const Notifications = require("./notifications");
 
-const Feed = sequelize.define(
+const Feed = skrollsSequelize.define(
   "Feed",
   {
     id: {
@@ -38,7 +38,10 @@ const Feed = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onUpdate: "CASCADE",

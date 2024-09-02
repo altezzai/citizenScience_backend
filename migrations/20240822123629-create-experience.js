@@ -12,12 +12,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       workspace: {
         type: Sequelize.STRING,
@@ -44,8 +38,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Experiences
+      ADD CONSTRAINT fk_experiences_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Experiences
+      DROP FOREIGN KEY fk_experiences_userId;
+    `);
     await queryInterface.dropTable("Experiences");
   },
 };

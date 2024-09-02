@@ -22,11 +22,10 @@ router.get("/feeds/:feedId", feedController.getFeed);
 router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
+router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/likes", likeController.addLike);
 router.get("/feeds/:feedId/likes", likeController.getLikes);
-
-router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/:feedId/comments", commentController.addComment);
 router.get("/feeds/:feedId/comments", commentController.getComments);

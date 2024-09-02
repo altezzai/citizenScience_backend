@@ -1,8 +1,8 @@
 "use strict";
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 
-const ChatMembers = sequelize.define(
+const ChatMembers = skrollsSequelize.define(
   "ChatMembers",
   {
     id: {
@@ -25,7 +25,10 @@ const ChatMembers = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "CASCADE",
@@ -50,6 +53,5 @@ const ChatMembers = sequelize.define(
     timestamps: true,
   }
 );
-
 
 module.exports = ChatMembers;

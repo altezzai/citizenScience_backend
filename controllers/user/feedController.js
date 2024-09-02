@@ -1,5 +1,8 @@
-const { Op } = require("sequelize");
-const sequelize = require("../../config/connection");
+const { Sequelize, Op } = require("sequelize");
+const {
+  repositorySequelize,
+  skrollsSequelize,
+} = require("../../config/connection");
 const Feed = require("../../models/feed");
 const Like = require("../../models/like");
 const User = require("../../models/user");
@@ -41,7 +44,7 @@ const addFeed = async (req, res) => {
 
   const validHashTags = parsedHashTags.filter((tag) => tag.trim() !== "");
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const fileName = files.map((file) => file.filename);
@@ -127,18 +130,48 @@ const getFeeds = async (req, res) => {
       limit,
       where: { userId: feedUserIds },
       order: [["createdAt", "DESC"]],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "profilePhoto",
+          ],
+        ],
+      },
       include: [
-        { model: User, attributes: ["id", "username", "profilePhoto"] },
         {
           model: FeedMentions,
-          attributes: ["id"],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username"],
-            },
+          attributes: [
+            "id",
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
         },
+
         {
           model: PostHashtags,
           attributes: ["hashtagId"],
@@ -189,19 +222,45 @@ const getFeed = async (req, res) => {
 
   try {
     const feed = await Feed.findByPk(feedId, {
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "profilePhoto",
+          ],
+        ],
+      },
       include: [
         {
-          model: User,
-          attributes: ["username", "profilePhoto"],
-        },
-        {
           model: FeedMentions,
-          attributes: ["id"],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username"],
-            },
+          attributes: [
+            "id",
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
         },
 
@@ -243,31 +302,52 @@ const getFeed = async (req, res) => {
       attributes: {
         include: [
           [
-            sequelize.literal(`(
+            skrollsSequelize.literal(`(
               SELECT COUNT(*)
               FROM Comments AS Replies
               WHERE Replies.parentId = Comments.id
             )`),
             "replyCount",
           ],
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "profilePhoto",
+          ],
         ],
       },
       include: [
         {
-          model: User,
-          as: "CommentUser",
-          attributes: ["username", "profilePhoto"],
-        },
-        {
           model: FeedMentions,
-          attributes: ["id"],
-          order: [["createdAt", "ASC"]],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username", "profilePhoto"],
-            },
+          attributes: [
+            "id",
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
@@ -298,16 +378,45 @@ const getUserFeeds = async (req, res) => {
       limit,
       where: { userId: userId },
       order: [["createdAt", "DESC"]],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+            )`),
+            "profilePhoto",
+          ],
+        ],
+      },
       include: [
-        { model: User, attributes: ["id", "username", "profilePhoto"] },
         {
           model: FeedMentions,
-          attributes: ["id"],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username"],
-            },
+          attributes: [
+            "id",
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
         },
         {
@@ -355,7 +464,7 @@ const updateFeed = async (req, res) => {
   const { id } = req.params;
   const { link, description, mentionIds, hashTags } = req.body;
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const feedUpdateFields = {};
@@ -526,7 +635,7 @@ const deleteFeed = async (req, res) => {
 const updateCounts = async (req, res) => {
   const { viewList, shareList } = req.body;
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
   try {
     const allFeedIds = [...new Set([...viewList, ...shareList])];
 

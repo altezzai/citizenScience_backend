@@ -14,12 +14,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "UserS",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       feedId: {
         type: Sequelize.INTEGER,
@@ -51,6 +45,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.FeedMentions
+      ADD CONSTRAINT fk_feedmentions_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("FeedMentions", {
       fields: ["feedId", "userId"],
       type: "unique",
@@ -59,6 +61,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.FeedMentions
+      DROP FOREIGN KEY fk_feedmentions_userId;
+    `);
     await queryInterface.removeConstraint("FeedMentions", "unique_mention");
 
     await queryInterface.dropTable("FeedMentions");

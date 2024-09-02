@@ -6,23 +6,13 @@ module.exports = {
       followerId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
+
         primaryKey: true,
       },
       followingId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
+
         primaryKey: true,
       },
       createdAt: {
@@ -34,6 +24,22 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Followers
+      ADD CONSTRAINT fk_follower_userId
+      FOREIGN KEY (followerId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Followers
+      ADD CONSTRAINT fk_following_userId
+      FOREIGN KEY (followingId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("Followers", {
       fields: ["followerId", "followingId"],
       type: "unique",
@@ -41,6 +47,14 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Followers
+      DROP FOREIGN KEY fk_follower_userId;
+    `);
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Followers
+      DROP FOREIGN KEY fk_following_userId;
+    `);
     await queryInterface.removeConstraint(
       "Followers",
       "unique_follower_following"
