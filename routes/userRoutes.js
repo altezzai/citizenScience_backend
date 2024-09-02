@@ -48,10 +48,7 @@ router.get("/followings", connectionController.followings);
 
 // router.get("/notifications", notificationController.notifications);
 router.get("/notifications", notificationController.getUserNotifications);
-router.put(
-  "/notifications/:notificationId",
-  notificationController.markNotificationAsRead
-);
+router.put("/notifications", notificationController.markNotificationAsRead);
 
 // chat section
 router.post("/chat/icon", upload.single("file"), chatController.iconUpload);
