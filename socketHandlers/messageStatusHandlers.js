@@ -1,5 +1,8 @@
 const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const Chats = require("../models/chats");
 const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");
@@ -11,7 +14,7 @@ exports.messageReceived =
     let transaction;
 
     try {
-      transaction = await sequelize.transaction();
+      transaction = await skrollsSequelize.transaction();
 
       const [updatedRows] = await MessageStatuses.update(
         { status: "received", receivedAt: new Date() },
@@ -44,13 +47,13 @@ exports.messageRead =
   (io, socket) =>
   async ({ messageId, userId }) => {
     try {
-      transaction = await sequelize.transaction();
+      transaction = await skrollsSequelize.transaction();
 
       const [updatedRows] = await MessageStatuses.update(
         {
           status: "read",
           readAt: new Date(),
-          receivedAt: sequelize.literal(
+          receivedAt: skrollsSequelize.literal(
             `CASE WHEN status != 'received' THEN NOW() ELSE receivedAt END`
           ),
         },
@@ -105,7 +108,7 @@ async function updateOverallMessageStatus(messageId, transaction) {
       where: { messageId: messageId },
       attributes: [
         "status",
-        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+        [skrollsSequelize.fn("COUNT", skrollsSequelize.col("id")), "count"],
       ],
       group: ["status"],
       transaction,
