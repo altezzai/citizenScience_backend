@@ -1,8 +1,8 @@
 "use strict";
 const { Model, DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 
-const Like = sequelize.define(
+const Like = skrollsSequelize.define(
   "Like",
   {
     id: {
@@ -16,7 +16,10 @@ const Like = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "CASCADE",

@@ -1,6 +1,6 @@
 "use strict";
 const { Model, DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { repositorySequelize } = require("../config/connection");
 const Feed = require("./feed");
 const Like = require("./like");
 const Comments = require("./comments");
@@ -19,7 +19,7 @@ const UserSkills = require("./userskills");
 const Experience = require("./experience");
 const Educations = require("./educations");
 
-const User = sequelize.define(
+const User = repositorySequelize.define(
   "User",
   {
     id: {
@@ -33,10 +33,10 @@ const User = sequelize.define(
       allowNull: false,
       unique: true,
     },
-    email: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-    },
+    // email: {
+    //   type: DataTypes.STRING(50),
+    //   allowNull: false,
+    // },
     password: {
       type: DataTypes.STRING(20),
       allowNull: false,
@@ -51,8 +51,16 @@ const User = sequelize.define(
   }
 );
 
-User.hasMany(Feed, { foreignKey: "userId" });
-Feed.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Feed, {
+  foreignKey: "userId",
+  constraints: false,
+  scope: { schema: "skrolls" },
+});
+Feed.belongsTo(User, {
+  foreignKey: "userId",
+  constraints: false,
+  scope: { schema: "repository" },
+});
 
 User.hasMany(FeedMentions, { foreignKey: "userId" });
 FeedMentions.belongsTo(User, { foreignKey: "userId" });

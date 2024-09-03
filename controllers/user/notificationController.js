@@ -1,4 +1,5 @@
-const sequelize = require("../../config/connection");
+const { skrollsSequelize } = require("../../config/connection");
+const { Sequelize } = require("sequelize");
 const Comments = require("../../models/comments");
 const Feed = require("../../models/feed");
 const Notifications = require("../../models/notifications");
@@ -85,18 +86,34 @@ const notifications = async (req, res) => {
 };
 
 const markNotificationAsRead = async (req, res) => {
-  const { notificationId } = req.params;
+  const { notificationIds } = req.body;
+
+  if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Invalid input, array of IDs is required" });
+  }
 
   try {
-    const notification = await Notifications.findByPk(notificationId);
-    if (!notification) {
-      return res.status(404).json({ error: "Notification not found" });
+    const result = await Notifications.update(
+      { isRead: true },
+      {
+        where: {
+          id: notificationIds,
+        },
+      }
+    );
+
+    if (result[0] === 0) {
+      return res
+        .status(404)
+        .json({ error: "No notifications found to update" });
     }
 
-    notification.isRead = true;
-    await notification.save();
-
-    res.status(200).json({ message: "Notification marked as read" });
+    res.status(200).json({
+      message: "Notifications marked as read",
+      updatedCount: result[0],
+    });
   } catch (error) {
     console.error("Error marking notification as read:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -112,13 +129,29 @@ const getUserNotifications = async (req, res) => {
     const notifications = await Notifications.findAll({
       where: { userId },
       order: [["createdAt", "DESC"]],
-      limit: 100,
+      limit,
+      attributes: {
+        include: [
+          "isRead",
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Notifications.actorId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Notifications.actorId
+            )`),
+            "profilePhoto",
+          ],
+        ],
+      },
       include: [
-        {
-          model: User,
-          as: "Actor",
-          attributes: ["id", "username", "profilePhoto"],
-        },
         {
           model: Feed,
           attributes: ["fileName"],
@@ -128,6 +161,7 @@ const getUserNotifications = async (req, res) => {
           attributes: ["id", "comment"],
         },
       ],
+      raw: true,
     });
 
     if (notifications.length === 0) {
@@ -138,18 +172,18 @@ const getUserNotifications = async (req, res) => {
     let currentLikeGroup = null;
 
     for (const notification of notifications) {
-      const actor = notification.Actor;
-      const actorUsername = actor ? actor.username : "Unknown User";
-      const actorId = actor ? actor.id : "unknown";
-      const actorImage = actor ? actor.profilePhoto : "unknown";
-
       const notificationData = {
         id: notification.id,
         type: notification.type,
         feedId: notification.feedId,
         commentId: notification.commentId,
+        isRead: notification.isRead ? true : false,
         actors: [
-          { id: actorId, username: actorUsername, profilePhoto: actorImage },
+          {
+            id: notification.actorId,
+            username: notification.username,
+            profilePhoto: notification.profilePhoto,
+          },
         ],
         content: notification.content,
         actionURL: notification.actionURL,
@@ -187,8 +221,8 @@ const getUserNotifications = async (req, res) => {
           if (!currentLikeGroup.actors.some((a) => a.id === actorId)) {
             currentLikeGroup.actors.push({
               id: actorId,
-              username: actorUsername,
-              profilePhoto: actorImage,
+              username: notification.username,
+              profilePhoto: notification.profilePhoto,
             });
           }
           if (

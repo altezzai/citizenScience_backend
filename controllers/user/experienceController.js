@@ -1,5 +1,4 @@
-const { where } = require("sequelize");
-const { sequelize } = require("../../config/connection");
+const { skrollsSequelize } = require("../../config/connection");
 const Experience = require("../../models/experience");
 
 const addExperience = async (req, res) => {

@@ -1,8 +1,8 @@
 "use strict";
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 
-const PostHashtags = sequelize.define(
+const PostHashtags = skrollsSequelize.define(
   "PostHashtags",
   {
     id: {

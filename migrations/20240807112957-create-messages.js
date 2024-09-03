@@ -22,12 +22,6 @@ module.exports = {
       senderId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       mediaUrl: {
         type: Sequelize.TEXT,
@@ -41,6 +35,11 @@ module.exports = {
       },
       content: {
         type: Sequelize.TEXT,
+      },
+      messageType: {
+        type: Sequelize.ENUM("regular", "system"),
+        allowNull: false,
+        defaultValue: "regular",
       },
       replyToId: {
         type: Sequelize.INTEGER,
@@ -75,8 +74,21 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Messages
+      ADD CONSTRAINT fk_messages_userId
+      FOREIGN KEY (senderId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Messages
+      DROP FOREIGN KEY fk_messages_userId;
+    `);
     await queryInterface.dropTable("Messages");
   },
 };

@@ -22,12 +22,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       status: {
         type: Sequelize.ENUM("sent", "received", "read"),
@@ -51,8 +45,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.MessageStatuses
+      ADD CONSTRAINT fk_messagemtatuses_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.MessageStatuses
+      DROP FOREIGN KEY fk_messagemtatuses_userId;
+    `);
     await queryInterface.dropTable("MessageStatuses");
   },
 };

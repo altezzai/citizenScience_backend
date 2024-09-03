@@ -13,12 +13,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       feedId: {
         type: Sequelize.INTEGER,
@@ -49,6 +43,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Likes
+      ADD CONSTRAINT fk_likes_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("Likes", {
       fields: ["userId", "feedId", "commentId"],
       type: "unique",
@@ -56,6 +58,10 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Likes
+      DROP FOREIGN KEY fk_likes_userId;
+    `);
     await queryInterface.removeConstraint("Likes", "unique_post_user_like");
     await queryInterface.dropTable("Likes");
   },

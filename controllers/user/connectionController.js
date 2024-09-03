@@ -1,4 +1,8 @@
-const sequelize = require("../../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../../config/connection");
+const { Sequelize } = require("sequelize");
 const Followers = require("../../models/followers");
 const Notifications = require("../../models/notifications");
 const User = require("../../models/user");
@@ -11,7 +15,7 @@ const follow = async (req, res) => {
     return res.status(400).json({ error: "Invalid followerId or followingId" });
   }
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const [relationship, created] = await Followers.findOrCreate({
@@ -68,13 +72,24 @@ const followers = async (req, res) => {
       offset,
       limit,
       where: { followingId },
-      attributes: [],
-      include: [
-        {
-          model: User,
-          as: "FollowerDetails",
-          attributes: ["id", "username", "profilePhoto"],
-        },
+      attributes: [
+        "followerId",
+        [
+          Sequelize.literal(`(
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "username",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT profilePhoto
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "profilePhoto",
+        ],
       ],
     });
 
@@ -102,13 +117,24 @@ const followings = async (req, res) => {
       offset,
       limit,
       where: { followerId },
-      attributes: [],
-      include: [
-        {
-          model: User,
-          as: "FollowingDetails",
-          attributes: ["id", "username", "profilePhoto"],
-        },
+      attributes: [
+        "followingId",
+        [
+          Sequelize.literal(`(
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followingId
+          )`),
+          "username",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT profilePhoto
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followingId
+          )`),
+          "profilePhoto",
+        ],
       ],
     });
 

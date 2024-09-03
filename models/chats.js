@@ -1,10 +1,10 @@
 "use strict";
 const { DataTypes, Model } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 const ChatMembers = require("./chatmembers");
 const DeletedChats = require("./deletedchats");
 
-const Chats = sequelize.define(
+const Chats = skrollsSequelize.define(
   "Chats",
   {
     id: {
@@ -24,7 +24,10 @@ const Chats = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "SET NULL",

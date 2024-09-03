@@ -12,12 +12,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       chatId: {
         type: Sequelize.INTEGER,
@@ -42,6 +36,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.DeletedChats
+      ADD CONSTRAINT fk_deletedchats_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("DeletedChats", {
       fields: ["userId", "chatId"],
       type: "unique",
@@ -49,6 +51,10 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.DeletedChats
+      DROP FOREIGN KEY fk_deletedchats_userId;
+    `);
     await queryInterface.removeConstraint("DeletedChats", "unique_delete_chat");
 
     await queryInterface.dropTable("DeletedChats");

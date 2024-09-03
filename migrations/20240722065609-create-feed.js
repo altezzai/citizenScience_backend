@@ -31,12 +31,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       likeCount: {
         type: Sequelize.INTEGER,
@@ -73,55 +67,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
-
-    await queryInterface.createTable("SavedFeeds", {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER,
-      },
-
-      userId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-      feedId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Feeds",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      },
-
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-    });
-
-    await queryInterface.addConstraint("SavedFeeds", {
-      fields: ["userId", "feedId"],
-      type: "unique",
-      name: "unique_saved_feeds",
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Feeds
+      ADD CONSTRAINT fk_feeds_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeConstraint("SavedFeeds", "unique_saved_feeds");
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Feeds
+      DROP FOREIGN KEY fk_feeds_userId;
+    `);
     await queryInterface.dropTable("Feeds");
-    await queryInterface.dropTable("SavedFeeds");
   },
 };

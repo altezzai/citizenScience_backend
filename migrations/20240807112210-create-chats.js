@@ -19,12 +19,6 @@ module.exports = {
       createdBy: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "SET NULL",
-        onUpdate: "CASCADE",
       },
       icon: {
         type: Sequelize.STRING,
@@ -42,8 +36,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Chats
+      ADD CONSTRAINT fk_chats_userId
+      FOREIGN KEY (createdBy)
+      REFERENCES repository.Users(id)
+      ON DELETE SET NULL
+      ON UPDATE CASCADE;
+    `);
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.Chats
+      DROP FOREIGN KEY fk_chats_userId;
+    `);
     await queryInterface.dropTable("Chats");
   },
 };

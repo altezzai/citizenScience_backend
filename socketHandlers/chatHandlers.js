@@ -1,5 +1,8 @@
 const { Op, Sequelize } = require("sequelize");
-const sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const Chats = require("../models/chats");
 const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");
@@ -22,7 +25,7 @@ exports.createChat =
     mediaUrl,
     sentAt,
   }) => {
-    const transaction = await sequelize.transaction();
+    const transaction = await skrollsSequelize.transaction();
     try {
       if ((type === "group" || type === "community") && !name) {
         console.log("Name is required for group and community chats.");
@@ -137,53 +140,59 @@ exports.createChat =
 exports.updateChat =
   (io, socket) =>
   async ({ chatId, name, icon, description, userId }) => {
-    const transaction = await sequelize.transaction();
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
 
     try {
       const chat = await Chats.findOne({
         where: { id: chatId },
-        transaction,
+        transaction: skrollsTransaction,
       });
+
+      const existingName = chat.name;
 
       if (!chat) {
         socket.emit("error", "Chat not found.");
-        await transaction.rollback();
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
       const chatMember = await ChatMembers.findOne({
         where: { chatId, userId },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!chatMember || !chatMember.isAdmin) {
         socket.emit("error", "Only admins can update the chat.");
-        await transaction.rollback();
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
       const user = await User.findOne({
         where: { id: userId },
         attributes: ["username"],
-        transaction,
+        transaction: repositoryTransaction,
       });
 
       if (!user) {
         socket.emit("error", "User not found.");
-        await transaction.rollback();
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
       let content = `${user.username} updated the chat.`;
       if (name) {
-        content = `${user.username} changed the chat name to ${name}.`;
+        content = `${user.username} changed the chat name ${existingName} to ${name}.`;
       } else if (icon) {
         content = `${user.username} changed the chat icon.`;
       }
 
       const updatedChat = await chat.update(
         { name, icon, description },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
       const updateMessage = await Messages.create(
@@ -191,18 +200,22 @@ exports.updateChat =
           chatId,
           senderId: userId,
           content,
+          messageType: "system",
           mediaUrl: null,
           sentAt: new Date(),
+          overallStatus: "sent",
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
-      await transaction.commit();
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
 
       io.to(chatId).emit("chatUpdated", updatedChat);
       io.to(chatId).emit("newMessage", updateMessage);
     } catch (error) {
-      await transaction.rollback();
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
       console.error("Error updating chat:", error);
       socket.emit("error", "Failed to update chat.");
     }
@@ -227,19 +240,34 @@ exports.getChatMembers =
 
       const members = await ChatMembers.findAll({
         where: { chatId },
-        include: [
-          {
-            model: User,
-            attributes: ["id", "username", "profilePhoto"],
-          },
-        ],
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(`(
+                SELECT username
+                FROM repository.Users AS users
+                WHERE users.id = ChatMembers.userId
+              )`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                SELECT profilePhoto
+                FROM repository.Users AS users
+                WHERE users.id = ChatMembers.userId
+              )`),
+              "profilePhoto",
+            ],
+          ],
+        },
+        raw: true,
       });
 
       const memberDetails = members.map((member) => ({
         userId: member.userId,
-        username: member.User.username,
-        profilePhoto: member.User.profilePhoto,
-        isAdmin: member.isAdmin,
+        username: member.username,
+        profilePhoto: member.profilePhoto,
+        isAdmin: member.isAdmin ? true : false,
       }));
 
       socket.emit("chatMembers", {
@@ -282,12 +310,7 @@ exports.getUserConversations =
         include: [
           {
             model: ChatMembers,
-            include: [
-              {
-                model: User,
-                attributes: ["id", "username", "profilePhoto"],
-              },
-            ],
+            attributes: ["userId"],
           },
           {
             model: DeletedChats,
@@ -296,12 +319,17 @@ exports.getUserConversations =
           },
           {
             model: Messages,
-            include: [
-              {
-                model: User,
-                as: "sender",
-                attributes: ["id", "username", "profilePhoto"],
-              },
+            where: {
+              messageType: "regular",
+            },
+            attributes: [
+              "id",
+              "content",
+              "messageType",
+              "senderId",
+              "createdAt",
+              "overallStatus",
+              "deleteForEveryone",
             ],
             order: [["createdAt", "DESC"]],
           },
@@ -309,7 +337,7 @@ exports.getUserConversations =
         where: {
           id: {
             [Op.in]: Sequelize.literal(
-              `(SELECT chatId FROM ChatMembers WHERE userId = ${userId})`
+              `(SELECT chatId FROM skrolls.ChatMembers WHERE userId = ${userId})`
             ),
           },
           type: type,
@@ -324,6 +352,24 @@ exports.getUserConversations =
 
       const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
 
+      const userIds = new Set();
+      conversations.forEach((convo) => {
+        convo.ChatMembers.forEach((member) => userIds.add(member.userId));
+        convo.Messages.forEach((message) => userIds.add(message.senderId));
+      });
+
+      const users = await User.findAll({
+        where: {
+          id: Array.from(userIds),
+        },
+        attributes: ["id", "username", "profilePhoto"],
+      });
+
+      const userMap = {};
+      users.forEach((user) => {
+        userMap[user.id] = user;
+      });
+
       const filteredConversations = conversations
         .map((conversation) => {
           const validMessages = conversation.Messages.filter((message) => {
@@ -332,6 +378,10 @@ exports.getUserConversations =
               !deletedMessageIds.includes(message.id)
             );
           });
+
+          validMessages.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
 
           const lastMessage =
             validMessages.length > 0 ? validMessages[0] : null;
@@ -345,25 +395,27 @@ exports.getUserConversations =
             : new Date(0);
 
           if (!isDeletedChat || lastValidMessageDate > deletedChatDate) {
+            const otherMember = conversation.ChatMembers.find(
+              (member) => member.userId !== userId
+            );
             return {
               chatId: conversation.id,
               type: conversation.type,
               name:
                 conversation.type == "personal"
-                  ? conversation.ChatMembers[0].User.username
+                  ? userMap[otherMember.userId]?.username || "Unknown User"
                   : conversation.name,
               icon:
                 conversation.type == "personal"
-                  ? conversation.ChatMembers[0].User.profilePhoto
+                  ? userMap[otherMember.userId]?.profilePhoto || null
                   : conversation.icon,
               lastMessage: lastMessage
                 ? {
                     id: lastMessage.id,
                     content: lastMessage.content,
                     senderId: lastMessage.senderId,
-                    senderUsername: lastMessage.sender
-                      ? lastMessage.sender.username
-                      : null,
+                    senderUsername:
+                      userMap[lastMessage.senderId]?.username || null,
                     status:
                       lastMessage.senderId === userId
                         ? lastMessage.overallStatus
@@ -377,11 +429,6 @@ exports.getUserConversations =
           return null;
         })
         .filter((convo) => convo !== null);
-
-      console.log(
-        "Filtered Conversations:",
-        JSON.stringify(filteredConversations, null, 2)
-      );
 
       const result = await Promise.all(
         filteredConversations.map(async (conversation) => {
@@ -416,8 +463,6 @@ exports.getUserConversations =
         })
       );
 
-      console.log("Final Result:", JSON.stringify(result, null, 2));
-
       socket.emit("userConversations", { conversations: result });
     } catch (error) {
       console.error("Error fetching user conversations:", error);
@@ -444,18 +489,33 @@ exports.getChatDetails =
 
       const members = await ChatMembers.findAll({
         where: { chatId },
-        include: [
-          {
-            model: User,
-            attributes: ["id", "username", "profilePhoto"],
-          },
-        ],
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(`(
+                SELECT username
+                FROM repository.Users AS users
+                WHERE users.id = ChatMembers.userId
+              )`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                SELECT profilePhoto
+                FROM repository.Users AS users
+                WHERE users.id = ChatMembers.userId
+              )`),
+              "profilePhoto",
+            ],
+          ],
+        },
+        raw: true,
       });
 
       const memberDetails = members.map((member) => ({
         userId: member.userId,
-        username: member.User.username,
-        profilePhoto: member.User.profilePhoto,
+        username: member.username,
+        profilePhoto: member.profilePhoto,
         isAdmin: member.isAdmin,
       }));
 

@@ -22,11 +22,10 @@ router.get("/feeds/:feedId", feedController.getFeed);
 router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
+router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/likes", likeController.addLike);
 router.get("/feeds/:feedId/likes", likeController.getLikes);
-
-router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/:feedId/comments", commentController.addComment);
 router.get("/feeds/:feedId/comments", commentController.getComments);
@@ -40,8 +39,8 @@ router.delete(
   commentController.deleteComment
 );
 
-router.post("/saved-feeds", savedFeedsController.saveFeed);
-router.get("/saved-feeds", savedFeedsController.getSavedFeeds);
+router.post("/savedFeeds", savedFeedsController.saveFeed);
+router.get("/savedFeeds", savedFeedsController.getSavedFeeds);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);
@@ -49,10 +48,7 @@ router.get("/followings", connectionController.followings);
 
 // router.get("/notifications", notificationController.notifications);
 router.get("/notifications", notificationController.getUserNotifications);
-router.put(
-  "/notifications/:notificationId",
-  notificationController.markNotificationAsRead
-);
+router.put("/notifications", notificationController.markNotificationAsRead);
 
 // chat section
 router.post("/chat/icon", upload.single("file"), chatController.iconUpload);
@@ -87,7 +83,7 @@ router.delete("/profile/education/:id", educationController.deleteEducation);
 //search section
 router.get("/search/user", searchController.searchUsers);
 router.get("/search/hashtag", searchController.searchHashtags);
-router.get("/chat/:chatId/member", searchController.searchMembers);
+router.get("/chat/:chatId/members", searchController.searchMembers);
 router.get("/chat", searchController.searchConversations);
 
 module.exports = router;

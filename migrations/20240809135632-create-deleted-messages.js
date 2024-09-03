@@ -12,12 +12,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       messageId: {
         type: Sequelize.INTEGER,
@@ -42,6 +36,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.DeletedMessages
+      ADD CONSTRAINT fk_deletedmessages_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("DeletedMessages", {
       fields: ["userId", "messageId"],
       type: "unique",
@@ -49,6 +51,10 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.DeletedMessages
+      DROP FOREIGN KEY fk_deletedmessages_userId;
+    `);
     await queryInterface.removeConstraint(
       "DeletedMessages",
       "unique_delete_message"

@@ -1,12 +1,12 @@
 "use strict";
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 const Chats = require("./chats");
 const MessageStatuses = require("./messagestatuses");
 const User = require("./user");
 const DeletedMessages = require("./deletedmessages");
 
-const Messages = sequelize.define(
+const Messages = skrollsSequelize.define(
   "Messages",
   {
     id: {
@@ -29,7 +29,10 @@ const Messages = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "CASCADE",
@@ -47,6 +50,11 @@ const Messages = sequelize.define(
     },
     content: {
       type: DataTypes.TEXT,
+    },
+    messageType: {
+      type: DataTypes.ENUM("regular", "system"),
+      allowNull: false,
+      defaultValue: "regular",
     },
     replyToId: {
       type: DataTypes.INTEGER,

@@ -1,7 +1,8 @@
 "use strict";
 const { Model, DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
-const Notifications = sequelize.define(
+const { skrollsSequelize } = require("../config/connection");
+
+const Notifications = skrollsSequelize.define(
   "Notifications",
   {
     id: {
@@ -14,7 +15,10 @@ const Notifications = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "CASCADE",
@@ -24,7 +28,10 @@ const Notifications = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Users",
+        model: {
+          tableName: "Users",
+          schema: "repository",
+        },
         key: "id",
       },
       onDelete: "CASCADE",
@@ -89,4 +96,3 @@ const Notifications = sequelize.define(
 );
 
 module.exports = Notifications;
-

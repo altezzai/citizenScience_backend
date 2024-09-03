@@ -12,12 +12,6 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
       },
       skillId: {
         type: Sequelize.INTEGER,
@@ -38,6 +32,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.UserSkills
+      ADD CONSTRAINT fk_userskills_userId
+      FOREIGN KEY (userId)
+      REFERENCES repository.Users(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+    `);
     await queryInterface.addConstraint("UserSkills", {
       fields: ["userId", "skillId"],
       type: "unique",
@@ -45,6 +47,10 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE skrolls.UserSkills
+      DROP FOREIGN KEY fk_userskills_userId;
+    `);
     await queryInterface.removeConstraint("UserSkills", "unique_user_skills");
     await queryInterface.dropTable("UserSkills");
   },

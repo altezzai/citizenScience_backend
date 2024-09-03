@@ -1,9 +1,9 @@
 "use strict";
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/connection");
+const {skrollsSequelize} = require("../config/connection");
 const UserSkills = require("./userskills");
 
-const Skills = sequelize.define(
+const Skills = skrollsSequelize.define(
   "Skills",
   {
     id: {

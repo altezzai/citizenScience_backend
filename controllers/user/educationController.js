@@ -1,4 +1,4 @@
-const { sequelize } = require("../../config/connection");
+const { skrollsSequelize } = require("../../config/connection");
 const Educations = require("../../models/educations");
 
 const addEducation = async (req, res) => {

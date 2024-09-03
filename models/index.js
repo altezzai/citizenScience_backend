@@ -2,26 +2,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const Sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const process = require("process");
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
-const config = require(__dirname + "/../config/config.json")[env];
 const db = {};
-
-const Sequelize = require("sequelize");
-
-// let sequelize;
-// if (config.use_env_variable) {
-//   sequelize = new Sequelize(process.env[config.use_env_variable], config);
-// } else {
-//   sequelize = new Sequelize(
-//     config.database,
-//     config.username,
-//     config.password,
-//     config
-//   );
-// }
 
 fs.readdirSync(__dirname)
   .filter((file) => {
@@ -34,7 +22,7 @@ fs.readdirSync(__dirname)
   })
   .forEach((file) => {
     const model = require(path.join(__dirname, file))(
-      sequelize,
+      file === "user.js" ? repositorySequelize : skrollsSequelize,
       Sequelize.DataTypes
     );
     db[model.name] = model;
@@ -46,7 +34,8 @@ Object.keys(db).forEach((modelName) => {
   }
 });
 
-db.sequelize = sequelize;
+db.skrollsSequelize = skrollsSequelize;
+db.repositorySequelize = repositorySequelize;
 db.Sequelize = Sequelize;
 
 module.exports = db;

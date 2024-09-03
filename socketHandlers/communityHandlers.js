@@ -1,5 +1,8 @@
 const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const Chats = require("../models/chats");
 const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");

@@ -1,6 +1,8 @@
-const { Op } = require("sequelize");
-const sequelize = require("../../config/connection");
-
+const { Op, Sequelize } = require("sequelize");
+const {
+  repositorySequelize,
+  skrollsSequelize,
+} = require("../../config/connection");
 const Feed = require("../../models/feed");
 const Like = require("../../models/like");
 const User = require("../../models/user");
@@ -9,7 +11,7 @@ const Notifications = require("../../models/notifications");
 
 const addLike = async (req, res) => {
   const { userId, feedIds = [], commentIds = [] } = req.body;
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const existingFeeds = await Feed.findAll({
@@ -157,12 +159,24 @@ const getLikes = async (req, res) => {
       offset,
       limit,
       where: { feedId, commentId },
-      attributes: [],
-      include: [
-        {
-          model: User,
-          attributes: ["id", "username", "profilePhoto"],
-        },
+      attributes: [
+        "userId",
+        [
+          Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Like.userId
+            )`),
+          "username",
+        ],
+        [
+          Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Like.userId
+            )`),
+          "profilePhoto",
+        ],
       ],
     });
     res.status(200).json(feedLikes);

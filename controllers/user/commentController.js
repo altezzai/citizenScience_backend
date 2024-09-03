@@ -1,6 +1,8 @@
-const { Op } = require("sequelize");
-const sequelize = require("../../config/connection");
-
+const { Op, Sequelize } = require("sequelize");
+const {
+  repositorySequelize,
+  skrollsSequelize,
+} = require("../../config/connection");
 const Feed = require("../../models/feed");
 const User = require("../../models/user");
 const Comments = require("../../models/comments");
@@ -11,7 +13,7 @@ const { addNotification } = require("./notificationController");
 const addComment = async (req, res) => {
   const { feedId } = req.params;
   const { userId, comment, mentionIds, parentId } = req.body;
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
   try {
     const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
 
@@ -103,31 +105,51 @@ const getComments = async (req, res) => {
       attributes: {
         include: [
           [
-            sequelize.literal(`(
+            skrollsSequelize.literal(`(
                 SELECT COUNT(*)
                 FROM Comments AS Replies
                 WHERE Replies.parentId = Comments.id
               )`),
             "replyCount",
           ],
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "profilePhoto",
+          ],
         ],
       },
       include: [
         {
-          model: User,
-          as: "CommentUser",
-          attributes: ["username", "profilePhoto"],
-        },
-        {
           model: FeedMentions,
-          attributes: ["id"],
-          order: [["createdAt", "ASC"]],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username", "profilePhoto"],
-            },
+          attributes: [
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
@@ -151,23 +173,47 @@ const getReplies = async (req, res) => {
       limit,
       where: { feedId, parentId: commentId },
       order: [["createdAt", "DESC"]],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT username
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT profilePhoto
+              FROM repository.Users AS users
+              WHERE users.id = Comments.userId
+            )`),
+            "profilePhoto",
+          ],
+        ],
+      },
 
       include: [
         {
-          model: User,
-          as: "CommentUser",
-          attributes: ["username", "profilePhoto"],
-        },
-        {
           model: FeedMentions,
-          attributes: ["id"],
-          order: [["createdAt", "ASC"]],
-          include: [
-            {
-              model: User,
-              attributes: ["id", "username", "profilePhoto"],
-            },
+          attributes: [
+            "userId",
+            [
+              Sequelize.literal(`(
+                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+              "username",
+            ],
+            [
+              Sequelize.literal(`(
+                  SELECT profilePhoto
+                  FROM repository.Users AS users
+                  WHERE users.id = FeedMentions.userId
+                )`),
+              "profilePhoto",
+            ],
           ],
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
@@ -183,10 +229,10 @@ const updateComment = async (req, res) => {
   const { commentId } = req.params;
   const { comment, mentionIds } = req.body;
 
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
-    const commentInstance = await Comments.findByPk(id, { transaction });
+    const commentInstance = await Comments.findByPk(commentId, { transaction });
 
     const updatedComment = await Comments.update(
       { comment },
@@ -199,7 +245,7 @@ const updateComment = async (req, res) => {
 
     if (mentionIds && Array.isArray(mentionIds)) {
       const existingMentions = await FeedMentions.findAll({
-        where: { commentId: id },
+        where: { commentId },
         transaction,
       });
 
@@ -216,7 +262,7 @@ const updateComment = async (req, res) => {
       if (mentionsToRemove.length > 0) {
         await FeedMentions.destroy({
           where: {
-            commentId: id,
+            commentId,
             userId: mentionsToRemove,
           },
           transaction,
@@ -246,7 +292,7 @@ const updateComment = async (req, res) => {
             "mention",
             "mentioned you in a comment",
             commentInstance.feedId,
-            id,
+            commentId,
             `/feed/${commentInstance.feedId}`,
             "Medium",
             transaction
@@ -256,7 +302,7 @@ const updateComment = async (req, res) => {
     }
     await transaction.commit();
 
-    const commentI = await Comments.findByPk(id);
+    const commentI = await Comments.findByPk(commentId);
     res.status(200).json(commentI);
   } catch (error) {
     await transaction.rollback();

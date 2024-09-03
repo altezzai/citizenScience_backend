@@ -1,5 +1,8 @@
 const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const Chats = require("../models/chats");
 const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");
@@ -10,7 +13,7 @@ const DeletedChats = require("../models/deletedchats");
 
 exports.sendMessage = (io, socket) => async (data) => {
   const { chatId, senderId, content, mediaUrl, replyToId, sentAt } = data;
-  const transaction = await sequelize.transaction();
+  const transaction = await skrollsSequelize.transaction();
 
   try {
     const chat = await Chats.findByPk(chatId, { transaction });
@@ -93,23 +96,54 @@ exports.getMessages =
         order: [["createdAt", "DESC"]],
         limit,
         offset,
-        attributes: ["id", "mediaUrl", "content", "overallStatus"],
+        attributes: [
+          "id",
+          "mediaUrl",
+          "content",
+          "messageType",
+          "overallStatus",
+          "senderId",
+          [
+            Sequelize.literal(`(
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Messages.senderId
+          )`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`(
+            SELECT profilePhoto
+            FROM repository.Users AS users
+            WHERE users.id = Messages.senderId
+          )`),
+            "profilePhoto",
+          ],
+        ],
         include: [
-          {
-            model: User,
-            as: "sender",
-            attributes: ["id", "username", "profilePhoto"],
-          },
           {
             model: Messages,
             as: "replyTo",
-            include: [
-              {
-                model: User,
-                as: "sender",
-                attributes: ["id", "username"],
-              },
-            ],
+            attributes: {
+              include: [
+                [
+                  Sequelize.literal(`(
+                    SELECT username
+                    FROM repository.Users AS users
+                    WHERE users.id = Messages.senderId
+                  )`),
+                  "username",
+                ],
+                [
+                  Sequelize.literal(`(
+                    SELECT profilePhoto
+                    FROM repository.Users AS users
+                    WHERE users.id = Messages.senderId
+                  )`),
+                  "profilePhoto",
+                ],
+              ],
+            },
           },
         ],
         subQuery: false,
