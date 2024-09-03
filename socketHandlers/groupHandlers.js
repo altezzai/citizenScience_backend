@@ -1,5 +1,8 @@
 const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../config/connection");
+const {
+  skrollsSequelize,
+  repositorySequelize,
+} = require("../config/connection");
 const Chats = require("../models/chats");
 const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");
@@ -9,14 +12,15 @@ const User = require("../models/user");
 exports.addMemberToChat =
   (io, socket) =>
   async ({ chatId, userId, addedBy }) => {
-    const transaction = await sequelize.transaction();
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
     try {
       const chat = await Chats.findOne({
         where: {
           id: chatId,
           type: { [Op.in]: ["group", "community"] },
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!chat) {
@@ -30,7 +34,7 @@ exports.addMemberToChat =
           userId: addedBy,
           isAdmin: true,
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!adminCheck) {
@@ -43,7 +47,7 @@ exports.addMemberToChat =
           chatId,
           userId,
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (existingMember) {
@@ -54,7 +58,7 @@ exports.addMemberToChat =
       const user = await User.findOne({
         where: { id: userId },
         attributes: ["username"],
-        transaction,
+        transaction: repositoryTransaction,
       });
 
       if (!user) {
@@ -68,7 +72,7 @@ exports.addMemberToChat =
           userId,
           isAdmin: false,
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
       const joinMessage = await Messages.create(
@@ -77,12 +81,14 @@ exports.addMemberToChat =
           senderId: addedBy,
           content: `${user.username} has joined the chat.`,
           mediaUrl: null,
+          overallStatus: "sent",
           sentAt: new Date(),
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
-      await transaction.commit();
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
 
       io.to(chatId).emit("memberAdded", {
         chatId,
@@ -92,7 +98,8 @@ exports.addMemberToChat =
         joinMessage,
       });
     } catch (error) {
-      await transaction.rollback();
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
       console.error("Error adding member to chat:", error);
       socket.emit("error", "Failed to add member to chat.");
     }
@@ -101,12 +108,12 @@ exports.addMemberToChat =
 exports.makeAdmin =
   (io, socket) =>
   async ({ chatId, userId, madeBy }) => {
-    const transaction = await sequelize.transaction();
-
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
     try {
       const requester = await ChatMembers.findOne({
         where: { chatId, userId: madeBy },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!requester || !requester.isAdmin) {
@@ -114,13 +121,14 @@ exports.makeAdmin =
           "error",
           "You do not have permission to make someone an admin."
         );
-        await transaction.rollback();
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
       const result = await ChatMembers.update(
         { isAdmin: true },
-        { where: { chatId, userId }, transaction }
+        { where: { chatId, userId }, transaction: skrollsTransaction }
       );
 
       if (result[0] === 0) {
@@ -128,23 +136,28 @@ exports.makeAdmin =
           "error",
           "Failed to make user an admin. User may not be part of the chat."
         );
-        await transaction.rollback();
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
-      const user = await User.findByPk(userId, { transaction });
+      const user = await User.findByPk(userId, {
+        transaction: repositoryTransaction,
+      });
 
       const adminMessage = await Messages.create(
         {
           chatId,
           senderId: madeBy,
           content: `${user.username} has been made an admin.`,
+          overallStatus: "sent",
           sentAt: new Date(),
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
-      await transaction.commit();
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
 
       io.to(chatId).emit("adminMade", {
         chatId,
@@ -153,28 +166,31 @@ exports.makeAdmin =
         adminMessage,
       });
     } catch (error) {
-      await transaction.rollback();
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
       console.error("Error making user an admin:", error);
       socket.emit("error", "Failed to make user an admin.");
     }
   };
 
-
-
-
-  exports.removeMemberFromChat = (io,socket) => async ({ chatId, userId, removedBy }) => {
-    const transaction = await sequelize.transaction();
+exports.removeMemberFromChat =
+  (io, socket) =>
+  async ({ chatId, userId, removedBy }) => {
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
     try {
       const chat = await Chats.findOne({
         where: {
           id: chatId,
           type: { [Op.in]: ["group", "community"] },
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!chat) {
         socket.emit("error", "Chat not found or not a group/community.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
@@ -184,11 +200,13 @@ exports.makeAdmin =
           userId: removedBy,
           isAdmin: true,
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!adminCheck) {
         socket.emit("error", "Only admins can remove members from the chat.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
@@ -197,22 +215,26 @@ exports.makeAdmin =
           chatId,
           userId,
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       if (!member) {
         socket.emit("error", "User is not a member of the chat.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
       const user = await User.findOne({
         where: { id: userId },
         attributes: ["username"],
-        transaction,
+        transaction: repositoryTransaction,
       });
 
       if (!user) {
         socket.emit("error", "User not found.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
         return;
       }
 
@@ -221,7 +243,7 @@ exports.makeAdmin =
           chatId,
           userId,
         },
-        transaction,
+        transaction: skrollsTransaction,
       });
 
       const removalMessage = await Messages.create(
@@ -230,13 +252,14 @@ exports.makeAdmin =
           senderId: removedBy,
           content: `${user.username} has been removed from the chat.`,
           mediaUrl: null,
+          overallStatus: "sent",
           sentAt: new Date(),
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
-      await transaction.commit();
-
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
       io.to(chatId).emit("memberRemoved", {
         chatId,
         userId,
@@ -244,7 +267,8 @@ exports.makeAdmin =
         removalMessage,
       });
     } catch (error) {
-      await transaction.rollback();
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
       console.error("Error removing member from chat:", error);
       socket.emit("error", "Failed to remove member from chat.");
     }
