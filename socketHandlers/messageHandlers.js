@@ -100,6 +100,7 @@ exports.getMessages =
           "id",
           "mediaUrl",
           "content",
+          "messageType",
           "overallStatus",
           "senderId",
           [

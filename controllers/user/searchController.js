@@ -161,47 +161,51 @@ const searchConversations = async (req, res) => {
   const searchString = req.query.q;
 
   try {
+    const deletedMessages = await DeletedMessages.findAll({
+      where: { userId },
+      attributes: ["messageId"],
+    });
+
+    const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
+
+    const userResults = await repositorySequelize.query(
+      `SELECT id FROM Users WHERE username LIKE ?`,
+      {
+        replacements: [`%${searchString}%`],
+        type: repositorySequelize.QueryTypes.SELECT,
+      }
+    );
+
+    const userIds = userResults.map((user) => user.id);
+
+    const chatResults = await skrollsSequelize.query(
+      `SELECT DISTINCT chatId FROM ChatMembers WHERE userId IN (?)`,
+      {
+        replacements: [userIds],
+        type: skrollsSequelize.QueryTypes.SELECT,
+      }
+    );
+
+    const chatIds = chatResults.map((chat) => chat.chatId);
+
     const conversations = await Chats.findAll({
       include: [
         {
           model: ChatMembers,
-          attributes: [
-            "userId",
-            [
-              Sequelize.literal(`(
-                  SELECT username from repository.Users AS users WHERE users.id = ChatMembers.userId)`),
-              "username",
-            ],
-            [
-              Sequelize.literal(`(
-                  SELECT profilePhoto
-                  FROM repository.Users AS users
-                  WHERE users.id = ChatMembers.userId
-                )`),
-              "profilePhoto",
-            ],
-          ],
+          attributes: ["userId"],
         },
         {
           model: Messages,
-          attributes: {
-            include: [
-              [
-                Sequelize.literal(`(
-                    SELECT username from repository.Users AS users WHERE users.id = Messages.senderId)`),
-                "username",
-              ],
-              [
-                Sequelize.literal(`(
-                    SELECT profilePhoto
-                    FROM repository.Users AS users
-                    WHERE users.id = Messages.senderId
-                  )`),
-                "profilePhoto",
-              ],
-            ],
-          },
+          attributes: [
+            "id",
+            "chatId",
+            "senderId",
+            "content",
+            "createdAt",
+            "deleteForEveryone",
+          ],
           where: {
+            messageType: "regular",
             content: {
               [Op.like]: `%${searchString}%`,
             },
@@ -210,35 +214,34 @@ const searchConversations = async (req, res) => {
         },
       ],
       where: {
-        [Op.or]: [
-          {
-            name: {
-              [Op.like]: `%${searchString}%`,
-            },
-          },
-          {
-            type: "personal",
-            "$ChatMembers.username$": {
-              [Op.like]: `%${searchString}%`,
-            },
-          },
-        ],
         id: {
-          [Op.in]: Sequelize.literal(
-            `(SELECT chatId FROM ChatMembers WHERE userId = ${userId})`
-          ),
+          [Op.in]: chatIds,
         },
       },
       order: [["updatedAt", "DESC"]],
-      raw: true,
     });
 
-    const deletedMessages = await DeletedMessages.findAll({
-      where: { userId },
-      attributes: ["messageId"],
-    });
+    const userPromises = Array.from(
+      new Set(
+        conversations.flatMap((convo) => [
+          ...convo.ChatMembers.map((cm) => cm.userId),
+          ...convo.Messages.map((msg) => msg.senderId),
+        ])
+      )
+    ).map((id) =>
+      repositorySequelize.query(
+        `SELECT id, username, profilePhoto FROM Users WHERE id = ?`,
+        {
+          replacements: [id],
+          type: repositorySequelize.QueryTypes.SELECT,
+        }
+      )
+    );
 
-    const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
+    const userResultsAll = await Promise.all(userPromises);
+    const userMap = new Map(
+      userResultsAll.flat().map((user) => [user.id, user])
+    );
 
     let relatedChats = [];
     let relatedMessages = [];
@@ -247,14 +250,12 @@ const searchConversations = async (req, res) => {
       const chatMembers = conversation.ChatMembers || [];
       const messages = conversation.Messages || [];
 
-      const validMessages = messages.filter((message) => {
-        return (
+      const validMessages = messages.filter(
+        (message) =>
           !message.deleteForEveryone && !deletedMessageIds.includes(message.id)
-        );
-      });
+      );
 
       const lastMessage = validMessages.length > 0 ? validMessages[0] : null;
-
       const isDeletedChat = conversation.DeletedChats
         ? conversation.DeletedChats.length > 0
         : false;
@@ -271,20 +272,19 @@ const searchConversations = async (req, res) => {
           type: conversation.type,
           name:
             conversation.type === "personal" && chatMembers.length > 0
-              ? chatMembers[0].username
+              ? userMap.get(chatMembers[0].userId)?.username || "Unknown"
               : conversation.name,
           icon:
             conversation.type === "personal" && chatMembers.length > 0
-              ? chatMembers[0].profilePhoto
+              ? userMap.get(chatMembers[0].userId)?.profilePhoto || null
               : conversation.icon,
           lastMessage: lastMessage
             ? {
                 id: lastMessage.id,
                 content: lastMessage.content,
                 senderId: lastMessage.senderId,
-                senderUsername: lastMessage.username
-                  ? lastMessage.username
-                  : null,
+                senderUsername:
+                  userMap.get(lastMessage.senderId)?.username || "Unknown",
                 status:
                   lastMessage.senderId === userId
                     ? lastMessage.overallStatus
@@ -302,10 +302,11 @@ const searchConversations = async (req, res) => {
             chatId: conversation.id,
             chatName:
               conversation.type === "personal" && chatMembers.length > 0
-                ? chatMembers[0].username
+                ? userMap.get(chatMembers[0].userId)?.username || "Unknown"
                 : conversation.name,
             senderId: message.senderId,
-            senderUsername: message.username ? message.username : null,
+            senderUsername:
+              userMap.get(message.senderId)?.username || "Unknown",
             status: message.senderId === userId ? message.overallStatus : null,
             createdAt: message.createdAt,
           });

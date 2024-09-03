@@ -51,6 +51,11 @@ const Messages = skrollsSequelize.define(
     content: {
       type: DataTypes.TEXT,
     },
+    messageType: {
+      type: DataTypes.ENUM("regular", "system"),
+      allowNull: false,
+      defaultValue: "regular",
+    },
     replyToId: {
       type: DataTypes.INTEGER,
 

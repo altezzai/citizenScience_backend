@@ -36,6 +36,11 @@ module.exports = {
       content: {
         type: Sequelize.TEXT,
       },
+      messageType: {
+        type: Sequelize.ENUM("regular", "system"),
+        allowNull: false,
+        defaultValue: "regular",
+      },
       replyToId: {
         type: Sequelize.INTEGER,
 

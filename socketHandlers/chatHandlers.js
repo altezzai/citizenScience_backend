@@ -200,6 +200,7 @@ exports.updateChat =
           chatId,
           senderId: userId,
           content,
+          messageType: "system",
           mediaUrl: null,
           sentAt: new Date(),
           overallStatus: "sent",
@@ -318,9 +319,13 @@ exports.getUserConversations =
           },
           {
             model: Messages,
+            where: {
+              messageType: "regular",
+            },
             attributes: [
               "id",
               "content",
+              "messageType",
               "senderId",
               "createdAt",
               "overallStatus",
@@ -374,6 +379,10 @@ exports.getUserConversations =
             );
           });
 
+          validMessages.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+
           const lastMessage =
             validMessages.length > 0 ? validMessages[0] : null;
 
@@ -421,11 +430,6 @@ exports.getUserConversations =
         })
         .filter((convo) => convo !== null);
 
-      console.log(
-        "Filtered Conversations:",
-        JSON.stringify(filteredConversations, null, 2)
-      );
-
       const result = await Promise.all(
         filteredConversations.map(async (conversation) => {
           const unreadMessagesCount = await MessageStatuses.count({
@@ -458,8 +462,6 @@ exports.getUserConversations =
           };
         })
       );
-
-      console.log("Final Result:", JSON.stringify(result, null, 2));
 
       socket.emit("userConversations", { conversations: result });
     } catch (error) {

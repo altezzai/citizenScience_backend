@@ -34,7 +34,20 @@ exports.addMemberToChat =
           userId: addedBy,
           isAdmin: true,
         },
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(`(
+                SELECT username
+                FROM repository.Users AS users
+                WHERE users.id = ChatMembers.userId
+              )`),
+              "username",
+            ],
+          ],
+        },
         transaction: skrollsTransaction,
+        raw: true,
       });
 
       if (!adminCheck) {
@@ -79,7 +92,8 @@ exports.addMemberToChat =
         {
           chatId,
           senderId: addedBy,
-          content: `${user.username} has joined the chat.`,
+          content: `${adminCheck.username} added ${user.username} to the the chat.`,
+          messageType: "system",
           mediaUrl: null,
           overallStatus: "sent",
           sentAt: new Date(),
@@ -150,6 +164,7 @@ exports.makeAdmin =
           chatId,
           senderId: madeBy,
           content: `${user.username} has been made an admin.`,
+          messageType: "system",
           overallStatus: "sent",
           sentAt: new Date(),
         },
@@ -251,6 +266,7 @@ exports.removeMemberFromChat =
           chatId,
           senderId: removedBy,
           content: `${user.username} has been removed from the chat.`,
+          messageType: "system",
           mediaUrl: null,
           overallStatus: "sent",
           sentAt: new Date(),
