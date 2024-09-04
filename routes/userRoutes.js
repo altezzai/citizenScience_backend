@@ -83,6 +83,8 @@ router.delete("/profile/education/:id", educationController.deleteEducation);
 //search section
 router.get("/search/user", searchController.searchUsers);
 router.get("/search/hashtag", searchController.searchHashtags);
+router.get("/feed/search/hashtag", searchController.searchFeedHashtags);
+router.get("/search/communities", searchController.searchCommunities);
 router.get("/chat/:chatId/members", searchController.searchMembers);
 router.get("/chat", searchController.searchConversations);
 

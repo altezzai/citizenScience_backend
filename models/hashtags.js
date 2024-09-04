@@ -1,7 +1,8 @@
 "use strict";
 const { DataTypes } = require("sequelize");
-const {skrollsSequelize} = require("../config/connection");
+const { skrollsSequelize } = require("../config/connection");
 const PostHashtags = require("./posthashtags");
+const CommunityHashtags = require("./communityhashtags");
 
 const Hashtags = skrollsSequelize.define(
   "Hashtags",
@@ -38,5 +39,8 @@ const Hashtags = skrollsSequelize.define(
 
 Hashtags.hasMany(PostHashtags, { foreignKey: "hashtagId" });
 PostHashtags.belongsTo(Hashtags, { foreignKey: "hashtagId" });
+
+Hashtags.hasMany(CommunityHashtags, { foreignKey: "hashtagId" });
+CommunityHashtags.belongsTo(Hashtags, { foreignKey: "hashtagId" });
 
 module.exports = Hashtags;

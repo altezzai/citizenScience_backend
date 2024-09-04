@@ -8,6 +8,7 @@ const SavedFeeds = require("./savedfeeds");
 const PostHashtags = require("./posthashtags");
 const Hashtags = require("./hashtags");
 const Notifications = require("./notifications");
+const CommunityFeeds = require("./communityfeeds");
 
 const Feed = skrollsSequelize.define(
   "Feed",
@@ -104,5 +105,8 @@ Like.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(Notifications, { foreignKey: "feedId" });
 Notifications.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(CommunityFeeds, { foreignKey: "feedId" });
+CommunityFeeds.belongsTo(Feed, { foreignKey: "feedId" });
 
 module.exports = Feed;

@@ -11,6 +11,7 @@ const Messages = require("../../models/messages");
 const DeletedMessages = require("../../models/deletedmessages");
 const MessageStatuses = require("../../models/messagestatuses");
 const Hashtags = require("../../models/hashtags");
+const CommunityHashtags = require("../../models/communityhashtags");
 
 const searchUsers = async (req, res) => {
   const userId = parseInt(req.query.userId);
@@ -79,6 +80,94 @@ const searchUsers = async (req, res) => {
   }
 };
 
+const searchFeedHashtags = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const searchQuery = req.query.q;
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  try {
+    const userCommunities = await ChatMembers.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Chats,
+          where: { type: "community" },
+          attributes: ["id", "name", "icon"],
+          include: [
+            {
+              model: CommunityHashtags,
+              include: [
+                {
+                  model: Hashtags,
+                  where: {
+                    hashtag: {
+                      [Op.like]: `%${searchQuery}%`,
+                    },
+                  },
+                  attributes: ["id", "hashtag", "usageCount"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const userCommunityHashtags = userCommunities.flatMap((member) =>
+      member.Chat.CommunityHashtags.map((ch) => ({
+        ...ch.Hashtag.toJSON(),
+        isCommunityAssociated: true,
+        community: {
+          id: member.Chat.id,
+          name: member.Chat.name,
+          icon: member.Chat.icon,
+        },
+      }))
+    );
+
+    const otherHashtags = await Hashtags.findAll({
+      where: {
+        hashtag: {
+          [Op.like]: `%${searchQuery}%`,
+        },
+        id: {
+          [Op.notIn]: userCommunityHashtags.map((h) => h.id),
+        },
+      },
+      attributes: ["id", "hashtag", "usageCount"],
+      order: [["usageCount", "DESC"]],
+    });
+
+    const combinedResults = [
+      ...userCommunityHashtags,
+      ...otherHashtags.map((h) => ({
+        ...h.toJSON(),
+        isCommunityAssociated: false,
+        community: null,
+      })),
+    ].sort((a, b) => {
+      if (a.isCommunityAssociated !== b.isCommunityAssociated) {
+        return a.isCommunityAssociated ? -1 : 1;
+      }
+      return b.usageCount - a.usageCount;
+    });
+
+    const paginatedResults = combinedResults.slice(offset, offset + limit);
+
+    res.status(200).json({
+      hashtags: paginatedResults,
+      totalCount: combinedResults.length,
+      page,
+      totalPages: Math.ceil(combinedResults.length / limit),
+    });
+  } catch (error) {
+    console.error("Error searching hashtags:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 const searchHashtags = async (req, res) => {
   const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
@@ -101,6 +190,42 @@ const searchHashtags = async (req, res) => {
     res.status(200).json(hashtags);
   } catch (error) {
     console.error("Error searching hashtags:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const searchCommunities = async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const searchQuery = req.query.q;
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  try {
+    const communities = await Chats.findAll({
+      where: {
+        name: {
+          [Op.like]: `%${searchQuery}%`,
+        },
+        type: "community",
+      },
+      attributes: ["id", "name", "icon"],
+      include: [
+        {
+          model: ChatMembers,
+          where: { userId },
+          required: true,
+          attributes: [],
+        },
+      ],
+
+      limit,
+      offset,
+    });
+
+    res.status(200).json(communities);
+  } catch (error) {
+    console.error("Error searching communities:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -362,6 +487,8 @@ const searchConversations = async (req, res) => {
 module.exports = {
   searchUsers,
   searchHashtags,
+  searchFeedHashtags,
+  searchCommunities,
   searchMembers,
   searchConversations,
 };
