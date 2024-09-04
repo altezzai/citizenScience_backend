@@ -14,9 +14,12 @@ const PostHashtags = require("../../models/posthashtags");
 const { addNotification } = require("./notificationController");
 const Notifications = require("../../models/notifications");
 const Followers = require("../../models/followers");
+const Chats = require("../../models/chats");
+const CommunityFeeds = require("../../models/communityfeeds");
 
 const addFeed = async (req, res) => {
-  const { link, description, userId, mentionIds, hashTags } = req.body;
+  const { link, description, userId, mentionIds, hashTags, communityIds } =
+    req.body;
   const files = req.files || [];
 
   let parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : [];
@@ -98,6 +101,34 @@ const addFeed = async (req, res) => {
       await PostHashtags.bulkCreate(postHashtags, { transaction });
     }
 
+    if (communityIds && communityIds.length > 0) {
+      const parsedCommunityIds = Array.isArray(communityIds)
+        ? communityIds
+        : JSON.parse(communityIds);
+
+      const validCommunities = await Chats.findAll({
+        where: {
+          id: parsedCommunityIds,
+          type: "community",
+        },
+        attributes: ["id"],
+        transaction,
+      });
+
+      const validCommunityIds = validCommunities.map(
+        (community) => community.id
+      );
+
+      if (validCommunityIds.length > 0) {
+        const communityFeedsData = validCommunityIds.map((communityId) => ({
+          chatId: communityId,
+          feedId: newFeed.id,
+        }));
+
+        await CommunityFeeds.bulkCreate(communityFeedsData, { transaction });
+      }
+    }
+
     await transaction.commit();
 
     res.status(201).json(newFeed);
@@ -177,6 +208,16 @@ const getFeeds = async (req, res) => {
             {
               model: Hashtags,
               attributes: ["hashtag"],
+            },
+          ],
+        },
+        {
+          model: CommunityFeeds,
+          attributes: ["chatId"],
+          include: [
+            {
+              model: Chats,
+              attributes: ["icon", "name"],
             },
           ],
         },
@@ -268,6 +309,16 @@ const getFeed = async (req, res) => {
             {
               model: Hashtags,
               attributes: ["hashtag"],
+            },
+          ],
+        },
+        {
+          model: CommunityFeeds,
+          attributes: ["chatId"],
+          include: [
+            {
+              model: Chats,
+              attributes: ["icon", "name"],
             },
           ],
         },
@@ -426,6 +477,16 @@ const getUserFeeds = async (req, res) => {
           ],
         },
         {
+          model: CommunityFeeds,
+          attributes: ["chatId"],
+          include: [
+            {
+              model: Chats,
+              attributes: ["icon", "name"],
+            },
+          ],
+        },
+        {
           model: Like,
           attributes: ["id"],
           where: {
@@ -458,7 +519,7 @@ const getUserFeeds = async (req, res) => {
 
 const updateFeed = async (req, res) => {
   const { id } = req.params;
-  const { link, description, mentionIds, hashTags } = req.body;
+  const { link, description, mentionIds, hashTags, communityIds } = req.body;
 
   const transaction = await skrollsSequelize.transaction();
 
@@ -536,6 +597,50 @@ const updateFeed = async (req, res) => {
             transaction
           );
         }
+      }
+    }
+
+    if (communityIds && Array.isArray(communityIds)) {
+      const validCommunityChats = await Chats.findAll({
+        where: {
+          id: communityIds,
+          type: "community",
+        },
+        attributes: ["id"],
+        transaction,
+      });
+
+      const validCommunityIds = validCommunityChats.map(
+        (community) => community.id
+      );
+
+      const currentCommunityFeeds = await CommunityFeeds.findAll({
+        where: { feedId: id },
+        transaction,
+      });
+
+      const currentCommunityIds = currentCommunityFeeds.map((cf) => cf.chatId);
+
+      const communitiesToRemove = currentCommunityIds.filter(
+        (chatId) => !validCommunityIds.includes(chatId)
+      );
+      const communitiesToAdd = validCommunityIds.filter(
+        (chatId) => !currentCommunityIds.includes(chatId)
+      );
+
+      if (communitiesToRemove.length > 0) {
+        await CommunityFeeds.destroy({
+          where: { feedId: id, chatId: communitiesToRemove },
+          transaction,
+        });
+      }
+
+      if (communitiesToAdd.length > 0) {
+        const communityFeeds = communitiesToAdd.map((chatId) => ({
+          chatId,
+          feedId: id,
+        }));
+        await CommunityFeeds.bulkCreate(communityFeeds, { transaction });
       }
     }
 

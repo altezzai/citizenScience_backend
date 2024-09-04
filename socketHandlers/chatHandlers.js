@@ -11,6 +11,8 @@ const User = require("../models/user");
 const socket = require("./socket");
 const DeletedChats = require("../models/deletedchats");
 const DeletedMessages = require("../models/deletedmessages");
+const Hashtags = require("../models/hashtags");
+const CommunityHashtags = require("../models/communityhashtags");
 
 exports.createChat =
   (io, socket) =>
@@ -21,6 +23,7 @@ exports.createChat =
     icon,
     description,
     members,
+    hashtags,
     initialMessage,
     mediaUrl,
     sentAt,
@@ -40,7 +43,6 @@ exports.createChat =
 
       if (type === "personal") {
         if (members.length !== 2) {
-          console.log("Personal chat must have exactly two members.");
           socket.emit("error", "Personal chat must have exactly two members.");
           return;
         }
@@ -65,12 +67,11 @@ exports.createChat =
         }
       }
 
-      // if (type === "group" || type === "community") {
-      //   if (!members.includes(createdBy)) {
-      //     members.push(createdBy);
-
-      //   }
-      // }
+      if (type === "group" || type === "community") {
+        if (members.length < 2) {
+          socket.emit("error", "chat must have exactly two members or above.");
+        }
+      }
 
       const chat = await Chats.create(
         {
@@ -95,6 +96,24 @@ exports.createChat =
           )
         )
       );
+
+      if (type === "community" && hashtags && hashtags.length > 0) {
+        await Promise.all(
+          hashtags.map(async (hashtagName) => {
+            const [hashtag] = await Hashtags.findOrCreate({
+              where: { hashtag: hashtagName },
+              transaction,
+            });
+            await CommunityHashtags.create(
+              {
+                chatId: chat.id,
+                hashtagId: hashtag.id,
+              },
+              { transaction }
+            );
+          })
+        );
+      }
 
       if (initialMessage) {
         const message = await Messages.create(
@@ -139,7 +158,7 @@ exports.createChat =
 
 exports.updateChat =
   (io, socket) =>
-  async ({ chatId, name, icon, description, userId }) => {
+  async ({ chatId, name, icon, description, userId, hashtags }) => {
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
 
@@ -194,6 +213,82 @@ exports.updateChat =
         { name, icon, description },
         { transaction: skrollsTransaction }
       );
+
+      if (hashtags && Array.isArray(hashtags)) {
+        const validHashtags = hashtags.filter((tag) => tag.trim() !== "");
+
+        const currentHashtags = await CommunityHashtags.findAll({
+          where: { chatId },
+          include: { model: Hashtags, attributes: ["id", "hashtag"] },
+          transaction: skrollsTransaction,
+        });
+
+        const currentHashtagMap = currentHashtags.reduce((acc, ch) => {
+          if (ch.Hashtags && ch.Hashtags.hashtag) {
+            acc[ch.Hashtags.hashtag] = ch.Hashtags.id;
+          }
+          return acc;
+        }, {});
+
+        const newHashtags = validHashtags.filter(
+          (tag) => !currentHashtagMap[tag]
+        );
+
+        const removedHashtags = currentHashtags.filter(
+          (ch) => !validHashtags.includes(ch.Hashtags && ch.Hashtags.hashtag)
+        );
+
+        if (removedHashtags.length > 0) {
+          await Promise.all(
+            removedHashtags.map(async (ch) => {
+              const hashtag = await Hashtags.findByPk(ch.hashtagId, {
+                transaction: skrollsTransaction,
+              });
+              if (hashtag) {
+                await hashtag.decrement("usageCount", {
+                  by: 1,
+                  transaction: skrollsTransaction,
+                });
+                if (hashtag.usageCount <= 0) {
+                  await Hashtags.destroy({
+                    where: { id: ch.hashtagId },
+                    transaction: skrollsTransaction,
+                  });
+                }
+              } else {
+                console.error(`Hashtag with ID ${ch.hashtagId} not found.`);
+              }
+
+              await CommunityHashtags.destroy({
+                where: { chatId, hashtagId: ch.hashtagId },
+                transaction: skrollsTransaction,
+              });
+            })
+          );
+        }
+
+        if (newHashtags.length > 0) {
+          const newHashtagPromises = newHashtags.map(async (tag) => {
+            const [hashtag] = await Hashtags.findOrCreate({
+              where: { hashtag: tag },
+              defaults: { usageCount: 0 },
+              transaction: skrollsTransaction,
+            });
+            await hashtag.increment("usageCount", {
+              by: 1,
+              transaction: skrollsTransaction,
+            });
+            return { chatId, hashtagId: hashtag.id };
+          });
+
+          const newHashtagRecords = await Promise.all(newHashtagPromises);
+          if (newHashtagRecords.length > 0) {
+            await CommunityHashtags.bulkCreate(newHashtagRecords, {
+              transaction: skrollsTransaction,
+            });
+          }
+        }
+      }
 
       const updateMessage = await Messages.create(
         {

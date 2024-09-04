@@ -3,6 +3,8 @@ const { DataTypes, Model } = require("sequelize");
 const { skrollsSequelize } = require("../config/connection");
 const ChatMembers = require("./chatmembers");
 const DeletedChats = require("./deletedchats");
+const CommunityFeeds = require("./communityfeeds");
+const CommunityHashtags = require("./communityhashtags");
 
 const Chats = skrollsSequelize.define(
   "Chats",
@@ -60,5 +62,11 @@ ChatMembers.belongsTo(Chats, { foreignKey: "chatId" });
 
 Chats.hasMany(DeletedChats, { foreignKey: "chatId" });
 DeletedChats.belongsTo(Chats, { foreignKey: "chatId" });
+
+Chats.hasMany(CommunityFeeds, { foreignKey: "chatId" });
+CommunityFeeds.belongsTo(Chats, { foreignKey: "chatId" });
+
+Chats.hasMany(CommunityHashtags, { foreignKey: "chatId" });
+CommunityHashtags.belongsTo(Chats, { foreignKey: "chatId" });
 
 module.exports = Chats;
