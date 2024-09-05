@@ -172,6 +172,13 @@ const getUserNotifications = async (req, res) => {
     let currentLikeGroup = null;
 
     for (const notification of notifications) {
+      let parsedFileName;
+      try {
+        parsedFileName = JSON.parse(notification["Feed.fileName"]);
+      } catch (error) {
+        console.error("Error parsing fileName:", error);
+        parsedFileName = notification["Feed.fileName"];
+      }
       const notificationData = {
         id: notification.id,
         type: notification.type,
@@ -188,8 +195,15 @@ const getUserNotifications = async (req, res) => {
         content: notification.content,
         actionURL: notification.actionURL,
         createdAt: notification.createdAt,
-        relatedFeed: notification.Feed,
-        relatedComment: notification.Comment,
+        relatedFeed: notification["Feed.fileName"]
+          ? { fileName: parsedFileName }
+          : null,
+        relatedComment: notification["Comment.id"]
+          ? {
+              id: notification["Comment.id"],
+              comment: notification["Comment.comment"],
+            }
+          : null,
       };
 
       if (
