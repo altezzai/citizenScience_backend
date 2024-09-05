@@ -60,6 +60,11 @@ module.exports = (io, socket) => {
 
   //Community section
 
+  socket.on(
+    "getCommunityMessagesAndFeeds",
+    communityHandlers.getCommunityMessagesAndFeeds(io, socket)
+  );
+
   //disconnecting
   socket.on("disconnect", () => {
     console.log("User disconnected");
