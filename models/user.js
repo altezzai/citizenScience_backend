@@ -44,6 +44,11 @@ const User = repositorySequelize.define(
     profilePhoto: {
       type: DataTypes.STRING,
     },
+    isAuthor: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     modelName: "User",

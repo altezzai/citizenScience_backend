@@ -12,6 +12,7 @@ const interestController = require("../controllers/user/interestController");
 const skillController = require("../controllers/user/skillController");
 const experienceController = require("../controllers/user/experienceController");
 const educationController = require("../controllers/user/educationController");
+const profileSettingsController = require("../controllers/user/profileSettingsController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -87,5 +88,11 @@ router.get("/feed/search/hashtag", searchController.searchFeedHashtags);
 router.get("/search/communities", searchController.searchCommunities);
 router.get("/chat/:chatId/members", searchController.searchMembers);
 router.get("/chat", searchController.searchConversations);
+
+//profileSettingsController section
+router.put(
+  "/settings/editProfile/registerAuthor",
+  profileSettingsController.registerAsAuthor
+);
 
 module.exports = router;
