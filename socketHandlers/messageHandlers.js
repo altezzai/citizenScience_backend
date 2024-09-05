@@ -103,6 +103,7 @@ exports.getMessages =
           "messageType",
           "overallStatus",
           "senderId",
+          "createdAt",
           [
             Sequelize.literal(`(
             SELECT username
