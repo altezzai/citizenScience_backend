@@ -13,6 +13,7 @@ const skillController = require("../controllers/user/skillController");
 const experienceController = require("../controllers/user/experienceController");
 const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
+const accountSettingsController = require("../controllers/user/accountSettingsController");
 const upload = require("../config/uploadConfig");
 
 const router = express.Router();
@@ -94,5 +95,15 @@ router.put(
   "/settings/editProfile/registerAuthor",
   profileSettingsController.registerAsAuthor
 );
+
+//accountSettingsController section
+// router.put(
+//   "/settings/accountSetting/deactivate",
+//   accountSettingsController.deactivateAccount
+// );
+// router.put(
+//   "/settings/accountSetting/delete",
+//   accountSettingsController.deleteAccount
+// );
 
 module.exports = router;

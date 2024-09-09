@@ -9,6 +9,7 @@ const Comments = require("../../models/comments");
 const FeedMentions = require("../../models/feedmentions");
 const Notifications = require("../../models/notifications");
 const { addNotification } = require("./notificationController");
+const Like = require("../../models/like");
 
 const addComment = async (req, res) => {
   const { feedId } = req.params;
@@ -92,6 +93,7 @@ const addComment = async (req, res) => {
 
 const getComments = async (req, res) => {
   const { feedId } = req.params;
+  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
@@ -151,10 +153,24 @@ const getComments = async (req, res) => {
           ],
           order: [["createdAt", "ASC"]],
         },
+        {
+          model: Like,
+          attributes: ["id"],
+          where: {
+            userId,
+          },
+          required: false,
+        },
       ],
     });
+    const processedComments = comments.map((comment) => {
+      return {
+        ...comment.toJSON(),
+        likedByUser: comment.Likes && comment.Likes.length > 0,
+      };
+    });
 
-    res.status(200).json(comments);
+    res.status(200).json(processedComments);
   } catch (error) {
     console.error("Error retrieving comments:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -163,12 +179,13 @@ const getComments = async (req, res) => {
 
 const getReplies = async (req, res) => {
   const { feedId, commentId } = req.params;
+  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
 
   try {
-    const comments = await Comments.findAll({
+    const replies = await Comments.findAll({
       offset,
       limit,
       where: { feedId, parentId: commentId },
@@ -215,12 +232,26 @@ const getReplies = async (req, res) => {
           ],
           order: [["createdAt", "ASC"]],
         },
+        {
+          model: Like,
+          attributes: ["id"],
+          where: {
+            userId,
+          },
+          required: false,
+        },
       ],
     });
+    const processedReplies = replies.map((reply) => {
+      return {
+        ...reply.toJSON(),
+        likedByUser: reply.Likes && reply.Likes.length > 0,
+      };
+    });
 
-    res.status(200).json(comments);
+    res.status(200).json(processedReplies);
   } catch (error) {
-    console.error("Error retrieving comments:", error);
+    console.error("Error retrieving replies:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -317,11 +348,10 @@ const deleteComment = async (req, res) => {
   try {
     const deletedComment = await Comments.destroy({ where: { id: commentId } });
 
-    if (deletedComment) {
-      res.status(200).json({ message: "Deleted Comment successfully" });
-    } else {
-      res.status(404).json({ error: "Comment not found" });
+    if (!deletedComment) {
+      return res.status(404).json({ error: "Comment not found" });
     }
+    res.status(200).json({ message: "Deleted Comment successfully" });
   } catch (error) {
     console.error("Error deleting comment:", error);
     res.status(500).json({ error: "Internal server error" });
