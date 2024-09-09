@@ -37,53 +37,53 @@ const addNotification = async (
   }
 };
 
-const notifications = async (req, res) => {
-  const userId = parseInt(req.query.userId);
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
-  const offset = (page - 1) * limit;
+// const notifications = async (req, res) => {
+//   const userId = parseInt(req.query.userId);
+//   const page = parseInt(req.query.page) || 1;
+//   const limit = parseInt(req.query.limit) || 20;
+//   const offset = (page - 1) * limit;
 
-  try {
-    const notifications = await Notifications.findAll({
-      where: { userId },
-      attributes: ["id", "type", "content", "isRead", "actionURL", "priority"],
-      include: [
-        {
-          model: User,
-          as: "Actor",
-          attributes: ["id", "username", "profilePhoto"],
-        },
-        {
-          model: Feed,
-          attributes: ["id", "fileName"],
-        },
-        {
-          model: Comments,
-          attributes: ["id", "comment"],
-        },
-      ],
-      order: [
-        [
-          sequelize.literal(`CASE 
-                WHEN priority = 'High' THEN 1 
-                WHEN priority = 'Medium' THEN 2 
-                WHEN priority = 'Low' THEN 3 
-                ELSE 4 
-                END`),
-          "ASC",
-        ],
-        ["createdAt", "DESC"],
-      ],
-      offset,
-      limit,
-    });
+//   try {
+//     const notifications = await Notifications.findAll({
+//       where: { userId },
+//       attributes: ["id", "type", "content", "isRead", "actionURL", "priority"],
+//       include: [
+//         {
+//           model: User,
+//           as: "Actor",
+//           attributes: ["id", "username", "profile_image"],
+//         },
+//         {
+//           model: Feed,
+//           attributes: ["id", "fileName"],
+//         },
+//         {
+//           model: Comments,
+//           attributes: ["id", "comment"],
+//         },
+//       ],
+//       order: [
+//         [
+//           sequelize.literal(`CASE
+//                 WHEN priority = 'High' THEN 1
+//                 WHEN priority = 'Medium' THEN 2
+//                 WHEN priority = 'Low' THEN 3
+//                 ELSE 4
+//                 END`),
+//           "ASC",
+//         ],
+//         ["createdAt", "DESC"],
+//       ],
+//       offset,
+//       limit,
+//     });
 
-    res.status(200).json(notifications);
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
+//     res.status(200).json(notifications);
+//   } catch (error) {
+//     console.error("Error fetching notifications:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 const markNotificationAsRead = async (req, res) => {
   const { notificationIds } = req.body;
@@ -143,7 +143,7 @@ const getUserNotifications = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
+              SELECT profile_image
               FROM repository.Users AS users
               WHERE users.id = Notifications.actorId
             )`),
@@ -301,7 +301,6 @@ function formatGroupedLikeMessage(group) {
 
 module.exports = {
   addNotification,
-  notifications,
   markNotificationAsRead,
   getUserNotifications,
 };

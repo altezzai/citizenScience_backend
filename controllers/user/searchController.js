@@ -26,7 +26,7 @@ const searchUsers = async (req, res) => {
         username: { [Op.like]: `%${searchQuery}%` },
         id: { [Op.not]: userId },
       },
-      attributes: ["id", "username", "profilePhoto"],
+      attributes: ["id", "username", "profile_image"],
       raw: true,
     });
 
@@ -66,7 +66,7 @@ const searchUsers = async (req, res) => {
 
     const users = await User.findAll({
       where: { id: { [Op.in]: orderedIds } },
-      attributes: ["id", "username", "profilePhoto"],
+      attributes: ["id", "username", "profile_image"],
       order: [Sequelize.literal(`FIELD(id, ${orderedIds.join(",")})`)],
       limit,
       offset,
@@ -254,7 +254,7 @@ const searchMembers = async (req, res) => {
           [Op.like]: `%${searchItem}%`,
         },
       },
-      attributes: ["id", "username", "profilePhoto"],
+      attributes: ["id", "username", "profile_image"],
     });
 
     const userIds = users.map((user) => user.id);
