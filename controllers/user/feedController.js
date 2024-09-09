@@ -172,7 +172,7 @@ const getFeeds = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
+              SELECT profile_image
               FROM repository.Users AS users
               WHERE users.id = Feed.userId
             )`),
@@ -192,7 +192,7 @@ const getFeeds = async (req, res) => {
             ],
             [
               Sequelize.literal(`(
-                  SELECT profilePhoto
+                  SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = FeedMentions.userId
                 )`),
@@ -273,7 +273,7 @@ const getFeed = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
+              SELECT profile_image
               FROM repository.Users AS users
               WHERE users.id = Feed.userId
             )`),
@@ -293,7 +293,7 @@ const getFeed = async (req, res) => {
             ],
             [
               Sequelize.literal(`(
-                  SELECT profilePhoto
+                  SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = FeedMentions.userId
                 )`),
@@ -367,7 +367,7 @@ const getFeed = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
+              SELECT profile_image
               FROM repository.Users AS users
               WHERE users.id = Comments.userId
             )`),
@@ -387,7 +387,7 @@ const getFeed = async (req, res) => {
             ],
             [
               Sequelize.literal(`(
-                  SELECT profilePhoto
+                  SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = FeedMentions.userId
                 )`),
@@ -437,7 +437,7 @@ const getUserFeeds = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
+              SELECT profile_image
               FROM repository.Users AS users
               WHERE users.id = Feed.userId
             )`),
@@ -458,7 +458,7 @@ const getUserFeeds = async (req, res) => {
             ],
             [
               Sequelize.literal(`(
-                  SELECT profilePhoto
+                  SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = FeedMentions.userId
                 )`),

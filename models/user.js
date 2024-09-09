@@ -33,15 +33,51 @@ const User = repositorySequelize.define(
       allowNull: false,
       unique: true,
     },
-    // email: {
-    //   type: DataTypes.STRING(50),
-    //   allowNull: false,
-    // },
+    first_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    middle_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    last_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    email: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    biography: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    twitter: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    linkedin: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    facebook: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    github: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     password: {
       type: DataTypes.STRING(20),
       allowNull: false,
     },
-    profilePhoto: {
+    profile_image: {
       type: DataTypes.STRING,
     },
     isAuthor: {

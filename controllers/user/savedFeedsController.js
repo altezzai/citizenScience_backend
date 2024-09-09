@@ -69,7 +69,7 @@ const getSavedFeeds = async (req, res) => {
               ],
               [
                 Sequelize.literal(`(
-                  SELECT profilePhoto
+                  SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = Feed.userId
                 )`),

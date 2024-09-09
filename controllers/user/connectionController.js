@@ -84,7 +84,32 @@ const followers = async (req, res) => {
         ],
         [
           Sequelize.literal(`(
-            SELECT profilePhoto
+            SELECT first_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "first_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT middle_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "middle_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT last_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "last_name",
+        ],
+
+        [
+          Sequelize.literal(`(
+            SELECT profile_image
             FROM repository.Users AS users
             WHERE users.id = Followers.followerId
           )`),
@@ -129,7 +154,31 @@ const followings = async (req, res) => {
         ],
         [
           Sequelize.literal(`(
-            SELECT profilePhoto
+            SELECT first_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "first_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT middle_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "middle_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT last_name
+            FROM repository.Users AS users
+            WHERE users.id = Followers.followerId
+          )`),
+          "last_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT profile_image
             FROM repository.Users AS users
             WHERE users.id = Followers.followingId
           )`),
