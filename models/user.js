@@ -49,6 +49,29 @@ const User = repositorySequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    citizenActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    citizenDeactivatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    isBanned: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    BannedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     modelName: "User",

@@ -4,6 +4,7 @@ const { skrollsSequelize } = require("../config/connection");
 const { FOREIGNKEYS } = require("sequelize/lib/query-types");
 const FeedMentions = require("./feedmentions");
 const Notifications = require("./notifications");
+const Like = require("./like");
 
 const Comments = skrollsSequelize.define(
   "Comments",
@@ -68,6 +69,9 @@ const Comments = skrollsSequelize.define(
     timestamps: true,
   }
 );
+
+Comments.hasMany(Like, { foreignKey: "commentId" });
+Like.belongsTo(Comments, { foreignKey: "commentId" });
 
 Comments.hasMany(Comments, { foreignKey: "parentId", as: "Replies" });
 Comments.belongsTo(Comments, { foreignKey: "parentId" });
