@@ -8,6 +8,7 @@ const connectionController = require("../controllers/user/connectionController")
 const notificationController = require("../controllers/user/notificationController");
 const chatController = require("../controllers/user/chatController");
 const searchController = require("../controllers/user/searchController");
+const profileController = require("../controllers/user/profileController");
 const interestController = require("../controllers/user/interestController");
 const skillController = require("../controllers/user/skillController");
 const experienceController = require("../controllers/user/experienceController");
@@ -81,6 +82,9 @@ router.post("/profile/:userId/education", educationController.addEducation);
 router.get("/profile/:userId/education", educationController.getEducations);
 router.put("/profile/education/:id", educationController.updateEducation);
 router.delete("/profile/education/:id", educationController.deleteEducation);
+
+//profile section
+router.get("/profileDetails", profileController.profileDetails);
 
 //search section
 router.get("/search/user", searchController.searchUsers);
