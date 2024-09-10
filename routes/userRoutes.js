@@ -85,6 +85,10 @@ router.delete("/profile/education/:id", educationController.deleteEducation);
 
 //profile section
 router.get("/profileDetails", profileController.profileDetails);
+router.post("/profile/:userId/otherId", profileController.addOtherIds);
+router.get("/profile/:userId/otherIds", profileController.getOtherIds);
+router.put("/profile/otherId/:id", profileController.updateOtherIds);
+router.delete("/profile/otherId/:id", profileController.deleteOtherIds);
 
 //search section
 router.get("/search/user", searchController.searchUsers);
