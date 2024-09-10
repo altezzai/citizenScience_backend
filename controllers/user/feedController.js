@@ -16,6 +16,7 @@ const Notifications = require("../../models/notifications");
 const Followers = require("../../models/followers");
 const Chats = require("../../models/chats");
 const CommunityFeeds = require("../../models/communityfeeds");
+const FeedViews = require("../../models/feedviews");
 
 const addFeed = async (req, res) => {
   const { link, description, userId, mentionIds, hashTags, communityIds } =
@@ -734,7 +735,7 @@ const deleteFeed = async (req, res) => {
 };
 
 const updateCounts = async (req, res) => {
-  const { viewList, shareList } = req.body;
+  const { viewList, shareList, userId } = req.body;
 
   const transaction = await skrollsSequelize.transaction();
   try {
@@ -751,7 +752,6 @@ const updateCounts = async (req, res) => {
     });
 
     const existingFeedIds = existingFeeds.map((feed) => feed.id);
-
     const nonExistingFeedIds = allFeedIds.filter(
       (id) => !existingFeedIds.includes(id)
     );
@@ -760,12 +760,32 @@ const updateCounts = async (req, res) => {
       console.error("The following feedIds do not exist:", nonExistingFeedIds);
     }
 
-    const validViewList = viewList.filter((id) => existingFeedIds.includes(id));
-    const validShareList = shareList.filter((id) =>
-      existingFeedIds.includes(id)
+    const existingFeedViews = await FeedViews.findAll({
+      where: {
+        userId,
+        feedId: {
+          [Op.in]: viewList,
+        },
+      },
+      attributes: ["feedId"],
+      transaction,
+    });
+
+    const viewedFeedIds = existingFeedViews.map((feedView) => feedView.feedId);
+
+    const validViewList = viewList.filter(
+      (id) => !viewedFeedIds.includes(id) && existingFeedIds.includes(id)
     );
 
     if (validViewList.length > 0) {
+      const feedViewsData = validViewList.map((feedId) => ({
+        userId,
+        feedId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+      await FeedViews.bulkCreate(feedViewsData, { transaction });
+
       await Feed.increment("viewsCount", {
         by: 1,
         where: {
@@ -774,6 +794,10 @@ const updateCounts = async (req, res) => {
         transaction,
       });
     }
+
+    const validShareList = shareList.filter((id) =>
+      existingFeedIds.includes(id)
+    );
 
     if (validShareList.length > 0) {
       await Feed.increment("shareCount", {
@@ -788,9 +812,7 @@ const updateCounts = async (req, res) => {
     await transaction.commit();
 
     res.status(200).json({
-      message:
-        "Views and shares updated successfully for the following feedIds:",
-      existingFeedIds,
+      message: "Views and shares updated successfully",
     });
   } catch (error) {
     await transaction.rollback();
