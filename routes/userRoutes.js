@@ -104,14 +104,14 @@ router.put(
   profileSettingsController.registerAsAuthor
 );
 
-//accountSettingsController section
-// router.put(
-//   "/settings/accountSetting/deactivate",
-//   accountSettingsController.deactivateAccount
-// );
-// router.put(
-//   "/settings/accountSetting/delete",
-//   accountSettingsController.deleteAccount
-// );
+// accountSettingsController section
+router.put(
+  "/settings/accountSetting/deactivate",
+  accountSettingsController.deactivateAccount
+);
+router.put(
+  "/settings/accountSetting/delete",
+  accountSettingsController.deleteAccount
+);
 
 module.exports = router;
