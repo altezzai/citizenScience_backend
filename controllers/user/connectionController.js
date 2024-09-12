@@ -59,12 +59,13 @@ const follow = async (req, res) => {
 
 const followers = async (req, res) => {
   const followingId = parseInt(req.query.userId);
+  const userId = parseInt(req.query.currentUserId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
   if (!followingId) {
-    return res.status(400).json({ error: "User ID is required" });
+    return res.status(400).json({ error: "followingId is required" });
   }
 
   try {
@@ -115,6 +116,21 @@ const followers = async (req, res) => {
           )`),
           "profilePhoto",
         ],
+        [
+          Sequelize.literal(`(
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM skrolls.Followers AS subFollowers
+                WHERE subFollowers.followerId = ${userId}
+                AND subFollowers.followingId = Followers.followerId
+              )
+              THEN 1
+              ELSE 0
+            END
+          )`),
+          "isFollowing",
+        ],
       ],
     });
 
@@ -129,12 +145,13 @@ const followers = async (req, res) => {
 
 const followings = async (req, res) => {
   const followerId = parseInt(req.query.userId);
+  const userId = parseInt(req.query.currentUserId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
   if (!followerId) {
-    return res.status(400).json({ error: "User ID is required" });
+    return res.status(400).json({ error: "followerId is required" });
   }
 
   try {
@@ -183,6 +200,21 @@ const followings = async (req, res) => {
             WHERE users.id = Followers.followingId
           )`),
           "profilePhoto",
+        ],
+        [
+          Sequelize.literal(`(
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM skrolls.Followers AS subFollowers
+                WHERE subFollowers.followerId = ${userId}
+                AND subFollowers.followingId = Followers.followingId
+              )
+              THEN 1
+              ELSE 0
+            END
+          )`),
+          "isFollowing",
         ],
       ],
     });
