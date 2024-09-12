@@ -147,9 +147,9 @@ const addLike = async (req, res) => {
   }
 };
 
-const getLikes = async (req, res) => {
+const getFeedLikes = async (req, res) => {
   const { feedId } = req.params;
-  const commentId = req.query.commentId ? parseInt(req.query.commentId) : null;
+  const userId = req.query.userId ? parseInt(req.query.userId) : null;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
@@ -158,27 +158,107 @@ const getLikes = async (req, res) => {
     const feedLikes = await Like.findAll({
       offset,
       limit,
-      where: { feedId, commentId },
+      where: {
+        feedId,
+      },
       attributes: [
         "userId",
         [
           Sequelize.literal(`(
-              SELECT username
-              FROM repository.Users AS users
-              WHERE users.id = Like.userId
-            )`),
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-              SELECT profile_image
-              FROM repository.Users AS users
-              WHERE users.id = Like.userId
-            )`),
+            SELECT profile_image
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
           "profilePhoto",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM skrolls.Followers AS followers
+            WHERE followers.followerId = ${userId}
+            AND followers.followingId = Like.userId
+          ) > 0`),
+          "isFollowing",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM skrolls.Followers AS followers
+            WHERE followers.followerId = Like.userId
+            AND followers.followingId = ${userId}
+          ) > 0`),
+          "isFollower",
         ],
       ],
     });
+
+    res.status(200).json(feedLikes);
+  } catch (error) {
+    console.error("Error retrieving likes", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+const getCommentLikes = async (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.query.userId ? parseInt(req.query.userId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 30;
+  const offset = (page - 1) * limit;
+
+  try {
+    const feedLikes = await Like.findAll({
+      offset,
+      limit,
+      where: {
+        commentId,
+      },
+      attributes: [
+        "userId",
+        [
+          Sequelize.literal(`(
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "username",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT profile_image
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "profilePhoto",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM skrolls.Followers AS followers
+            WHERE followers.followerId = ${userId}
+            AND followers.followingId = Like.userId
+          ) > 0`),
+          "isFollowing",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM skrolls.Followers AS followers
+            WHERE followers.followerId = Like.userId
+            AND followers.followingId = ${userId}
+          ) > 0`),
+          "isFollower",
+        ],
+      ],
+    });
+
     res.status(200).json(feedLikes);
   } catch (error) {
     console.error("Error retrieving likes", error);
@@ -188,5 +268,6 @@ const getLikes = async (req, res) => {
 
 module.exports = {
   addLike,
-  getLikes,
+  getFeedLikes,
+  getCommentLikes,
 };
