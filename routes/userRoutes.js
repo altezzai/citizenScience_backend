@@ -28,7 +28,8 @@ router.delete("/feeds/:id", feedController.deleteFeed);
 router.post("/feeds/updateCounts", feedController.updateCounts);
 
 router.post("/feeds/likes", likeController.addLike);
-router.get("/feeds/:feedId/likes", likeController.getLikes);
+router.get("/feeds/:feedId/likes", likeController.getFeedLikes);
+router.get("/feeds/comments/:commentId/likes", likeController.getCommentLikes);
 
 router.post("/feeds/:feedId/comments", commentController.addComment);
 router.get("/feeds/:feedId/comments", commentController.getComments);
