@@ -132,6 +132,15 @@ const followers = async (req, res) => {
           "isFollowing",
         ],
       ],
+      order: [
+        [
+          Sequelize.literal(
+            `CASE WHEN followerId = ${userId} THEN 0 ELSE 1 END`
+          ),
+          "ASC",
+        ],
+        ["followerId", "ASC"],
+      ],
     });
 
     // const followerList = followers.map(follow => follow.FollowerDetails);
@@ -155,7 +164,7 @@ const followings = async (req, res) => {
   }
 
   try {
-    const followersList = await Followers.findAll({
+    const followingsList = await Followers.findAll({
       offset,
       limit,
       where: { followerId },
@@ -173,7 +182,7 @@ const followings = async (req, res) => {
           Sequelize.literal(`(
             SELECT first_name
             FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            WHERE users.id = Followers.followingId
           )`),
           "first_name",
         ],
@@ -181,7 +190,7 @@ const followings = async (req, res) => {
           Sequelize.literal(`(
             SELECT middle_name
             FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            WHERE users.id = Followers.followingId
           )`),
           "middle_name",
         ],
@@ -189,7 +198,7 @@ const followings = async (req, res) => {
           Sequelize.literal(`(
             SELECT last_name
             FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            WHERE users.id = Followers.followingId
           )`),
           "last_name",
         ],
@@ -217,11 +226,20 @@ const followings = async (req, res) => {
           "isFollowing",
         ],
       ],
+      order: [
+        [
+          Sequelize.literal(
+            `CASE WHEN followingId = ${userId} THEN 0 ELSE 1 END`
+          ),
+          "ASC",
+        ],
+        ["followingId", "ASC"], // Secondary sort if needed
+      ],
     });
 
-    res.status(200).json(followersList);
+    res.status(200).json(followingsList);
   } catch (error) {
-    console.error("Error retreiving followings", error);
+    console.error("Error retrieving followings", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
