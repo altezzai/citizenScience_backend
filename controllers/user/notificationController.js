@@ -135,17 +135,28 @@ const getUserNotifications = async (req, res) => {
           "isRead",
           [
             Sequelize.literal(`(
-              SELECT username
-              FROM repository.Users AS users
-              WHERE users.id = Notifications.actorId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN 'skrolls.user'
+                  ELSE username
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Notifications.actorId
             )`),
             "username",
           ],
+
           [
             Sequelize.literal(`(
-              SELECT profile_image
-              FROM repository.Users AS users
-              WHERE users.id = Notifications.actorId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN NULL
+                  ELSE profile_image
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Notifications.actorId
             )`),
             "profilePhoto",
           ],
@@ -232,9 +243,11 @@ const getUserNotifications = async (req, res) => {
           };
         } else {
           currentLikeGroup.count++;
-          if (!currentLikeGroup.actors.some((a) => a.id === actorId)) {
+          if (
+            !currentLikeGroup.actors.some((a) => a.id === notification.actorId)
+          ) {
             currentLikeGroup.actors.push({
-              id: actorId,
+              id: notification.actorId,
               username: notification.username,
               profilePhoto: notification.profilePhoto,
             });
