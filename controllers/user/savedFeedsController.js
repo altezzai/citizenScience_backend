@@ -64,6 +64,8 @@ const getSavedFeeds = async (req, res) => {
                   SELECT username
                   FROM repository.Users AS users
                   WHERE users.id = Feed.userId
+                  AND users.isActive = true
+                  AND users.citizenActive = true
                 )`),
                 "username",
               ],
@@ -72,21 +74,32 @@ const getSavedFeeds = async (req, res) => {
                   SELECT profile_image
                   FROM repository.Users AS users
                   WHERE users.id = Feed.userId
+                  AND users.isActive = true
+                  AND users.citizenActive = true
                 )`),
                 "profilePhoto",
               ],
             ],
           },
+          where: Sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM repository.Users AS users
+            WHERE users.id = Feed.userId
+            AND users.isActive = true
+            AND users.citizenActive = true
+          ) > 0`),
         },
       ],
     });
+
     if (savedfeeds.length === 0) {
       return res.status(404).json({ message: "No saved feeds found" });
     }
+
     res.status(200).json({ feeds: savedfeeds });
   } catch (error) {
     console.error("Error retrieving Saved Feeds", error);
-    res.status(500).json({ error: "Intrenal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
