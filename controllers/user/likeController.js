@@ -173,6 +173,30 @@ const getFeedLikes = async (req, res) => {
         ],
         [
           Sequelize.literal(`(
+            SELECT first_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "first_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT middle_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "middle_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT last_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "last_name",
+        ],
+        [
+          Sequelize.literal(`(
             SELECT profile_image
             FROM repository.Users AS users
             WHERE users.id = Like.userId
@@ -229,6 +253,30 @@ const getCommentLikes = async (req, res) => {
             WHERE users.id = Like.userId
           )`),
           "username",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT first_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "first_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT middle_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "middle_name",
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT last_name
+            FROM repository.Users AS users
+            WHERE users.id = Like.userId
+          )`),
+          "last_name",
         ],
         [
           Sequelize.literal(`(
