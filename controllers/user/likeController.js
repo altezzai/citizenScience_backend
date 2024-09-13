@@ -165,44 +165,71 @@ const getFeedLikes = async (req, res) => {
         "userId",
         [
           Sequelize.literal(`(
-            SELECT username
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-            SELECT first_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE first_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "first_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT middle_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE middle_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "middle_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT last_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE last_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "last_name",
         ],
+
         [
           Sequelize.literal(`(
-            SELECT profile_image
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "profilePhoto",
         ],
+
         [
           Sequelize.literal(`(
             SELECT COUNT(*)
@@ -248,41 +275,67 @@ const getCommentLikes = async (req, res) => {
         "userId",
         [
           Sequelize.literal(`(
-            SELECT username
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-            SELECT first_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE first_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "first_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT middle_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE middle_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "middle_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT last_name
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE last_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "last_name",
         ],
+
         [
           Sequelize.literal(`(
-            SELECT profile_image
-            FROM repository.Users AS users
-            WHERE users.id = Like.userId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Like.userId
           )`),
           "profilePhoto",
         ],
