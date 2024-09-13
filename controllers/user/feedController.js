@@ -159,7 +159,21 @@ const getFeeds = async (req, res) => {
     const feeds = await Feed.findAll({
       offset,
       limit,
-      where: { userId: feedUserIds },
+      where: {
+        userId: feedUserIds,
+        [Sequelize.Op.and]: [
+          Sequelize.literal(`(
+            SELECT isActive 
+            FROM repository.Users 
+            WHERE repository.Users.id = Feed.userId
+          ) = true`),
+          Sequelize.literal(`(
+            SELECT citizenActive 
+            FROM repository.Users 
+            WHERE repository.Users.id = Feed.userId
+          ) = true`),
+        ],
+      },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -188,15 +202,29 @@ const getFeeds = async (req, res) => {
             "userId",
             [
               Sequelize.literal(`(
-                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                  SELECT profile_image
-                  FROM repository.Users AS users
-                  WHERE users.id = FeedMentions.userId
-                )`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "profilePhoto",
             ],
           ],
@@ -289,15 +317,29 @@ const getFeed = async (req, res) => {
             "userId",
             [
               Sequelize.literal(`(
-                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                  SELECT profile_image
-                  FROM repository.Users AS users
-                  WHERE users.id = FeedMentions.userId
-                )`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "profilePhoto",
             ],
           ],
@@ -360,17 +402,28 @@ const getFeed = async (req, res) => {
           ],
           [
             Sequelize.literal(`(
-              SELECT username
-              FROM repository.Users AS users
-              WHERE users.id = Comments.userId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN 'skrolls.user'
+                  ELSE username
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Comments.userId
             )`),
             "username",
           ],
+
           [
             Sequelize.literal(`(
-              SELECT profile_image
-              FROM repository.Users AS users
-              WHERE users.id = Comments.userId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN NULL
+                  ELSE profile_image
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Comments.userId
             )`),
             "profilePhoto",
           ],
@@ -383,15 +436,29 @@ const getFeed = async (req, res) => {
             "userId",
             [
               Sequelize.literal(`(
-                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                  SELECT profile_image
-                  FROM repository.Users AS users
-                  WHERE users.id = FeedMentions.userId
-                )`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "profilePhoto",
             ],
           ],
@@ -454,15 +521,29 @@ const getUserFeeds = async (req, res) => {
             "userId",
             [
               Sequelize.literal(`(
-                  SELECT username from repository.Users AS users WHERE users.id = FeedMentions.userId)`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                  SELECT profile_image
-                  FROM repository.Users AS users
-                  WHERE users.id = FeedMentions.userId
-                )`),
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = FeedMentions.userId
+              )`),
               "profilePhoto",
             ],
           ],
