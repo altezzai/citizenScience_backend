@@ -5,6 +5,7 @@ const {
 } = require("../../config/connection");
 const Interests = require("../../models/interests");
 const UserInterests = require("../../models/userinterests");
+const User = require("../../models/user");
 
 const addInterest = async (req, res) => {
   const { userId } = req.params;
@@ -58,6 +59,18 @@ const addInterest = async (req, res) => {
 const getUserInterests = async (req, res) => {
   const { userId } = req.params;
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isActive", "citizenActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
+    }
     const userInterests = await UserInterests.findAll({
       where: { userId },
       attributes: [],
