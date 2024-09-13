@@ -24,11 +24,17 @@ const profileDetails = async (req, res) => {
         "twitter",
         "website",
         "github",
+        "isActive",
+        "citizenActive",
       ],
     });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
     }
 
     const [followersCount, followingCount] = await Promise.all([
@@ -85,6 +91,19 @@ const addOtherIds = async (req, res) => {
 const getOtherIds = async (req, res) => {
   const { userId } = req.params;
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isActive", "citizenActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
+    }
+
     const otherids = await OtherIds.findAll({
       where: { userId },
       attributes: ["id", "name", "link"],

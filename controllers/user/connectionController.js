@@ -77,42 +77,67 @@ const followers = async (req, res) => {
         "followerId",
         [
           Sequelize.literal(`(
-            SELECT username
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followerId
           )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-            SELECT first_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE first_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followerId
           )`),
           "first_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT middle_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE middle_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followerId
           )`),
           "middle_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT last_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE last_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followerId
           )`),
           "last_name",
         ],
 
         [
           Sequelize.literal(`(
-            SELECT profile_image
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followerId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followerId
           )`),
           "profilePhoto",
         ],
@@ -172,41 +197,67 @@ const followings = async (req, res) => {
         "followingId",
         [
           Sequelize.literal(`(
-            SELECT username
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followingId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followingId
           )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-            SELECT first_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followingId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE first_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followingId
           )`),
           "first_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT middle_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followingId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE middle_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followingId
           )`),
           "middle_name",
         ],
         [
           Sequelize.literal(`(
-            SELECT last_name
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followingId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE last_name
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followingId
           )`),
           "last_name",
         ],
+
         [
           Sequelize.literal(`(
-            SELECT profile_image
-            FROM repository.Users AS users
-            WHERE users.id = Followers.followingId
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Followers.followingId
           )`),
           "profilePhoto",
         ],

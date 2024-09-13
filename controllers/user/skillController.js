@@ -51,6 +51,19 @@ const addSkills = async (req, res) => {
 const getUserSkills = async (req, res) => {
   const { userId } = req.params;
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isActive", "citizenActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
+    }
+
     const userSkills = await UserSkills.findAll({
       where: { userId },
       attributes: [],

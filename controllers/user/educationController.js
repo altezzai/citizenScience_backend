@@ -23,6 +23,19 @@ const addEducation = async (req, res) => {
 const getEducations = async (req, res) => {
   const { userId } = req.params;
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isActive", "citizenActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
+    }
+
     const educations = await Educations.findAll({
       where: { userId },
       attributes: ["id", "institution", "course", "startYear", "endYear"],
