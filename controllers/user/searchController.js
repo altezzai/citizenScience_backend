@@ -15,16 +15,21 @@ const CommunityHashtags = require("../../models/communityhashtags");
 
 const searchUsers = async (req, res) => {
   const userId = parseInt(req.query.userId);
-  const searchQuery = req.query.search;
+  const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
 
   try {
+    if (!searchQuery || searchQuery.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
     const matchingUsers = await User.findAll({
       where: {
         username: { [Op.like]: `%${searchQuery}%` },
         id: { [Op.not]: userId },
+        isActive: true,
+        citizenActive: true,
       },
       attributes: ["id", "username", "profile_image"],
       raw: true,
@@ -65,7 +70,11 @@ const searchUsers = async (req, res) => {
     const orderedIds = [...followingIds, ...followerIds, ...otherUserIds];
 
     const users = await User.findAll({
-      where: { id: { [Op.in]: orderedIds } },
+      where: {
+        id: { [Op.in]: orderedIds },
+        isActive: true,
+        citizenActive: true,
+      },
       attributes: ["id", "username", "profile_image"],
       order: [Sequelize.literal(`FIELD(id, ${orderedIds.join(",")})`)],
       limit,
@@ -88,6 +97,9 @@ const searchFeedHashtags = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
+    if (!searchQuery || searchQuery.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
     const userCommunities = await ChatMembers.findAll({
       where: { userId },
       include: [
@@ -175,6 +187,9 @@ const searchHashtags = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
+    if (!searchQuery || searchQuery.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
     const hashtags = await Hashtags.findAll({
       where: {
         hashtag: {
@@ -202,6 +217,9 @@ const searchCommunities = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
+    if (!searchQuery || searchQuery.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
     const communities = await Chats.findAll({
       where: {
         name: {
@@ -236,6 +254,9 @@ const searchMembers = async (req, res) => {
   const searchItem = req.query.q;
 
   try {
+    if (!searchItem || searchItem.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
     const followers = await Followers.findAll({
       where: {
         followerId: userId,
@@ -253,6 +274,8 @@ const searchMembers = async (req, res) => {
         username: {
           [Op.like]: `%${searchItem}%`,
         },
+        isActive: true,
+        citizenActive: true,
       },
       attributes: ["id", "username", "profile_image"],
     });
@@ -286,11 +309,14 @@ const searchConversations = async (req, res) => {
   const searchString = req.query.q;
 
   try {
+    if (!searchString || searchString.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
     const deletedMessages = await DeletedMessages.findAll({
       where: { userId },
       attributes: ["messageId"],
     });
-
     const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
 
     const userResults = await repositorySequelize.query(
@@ -300,7 +326,6 @@ const searchConversations = async (req, res) => {
         type: repositorySequelize.QueryTypes.SELECT,
       }
     );
-
     const userIds = userResults.map((user) => user.id);
 
     const chatResults = await skrollsSequelize.query(
@@ -310,7 +335,6 @@ const searchConversations = async (req, res) => {
         type: skrollsSequelize.QueryTypes.SELECT,
       }
     );
-
     const chatIds = chatResults.map((chat) => chat.chatId);
 
     const conversations = await Chats.findAll({
@@ -346,6 +370,7 @@ const searchConversations = async (req, res) => {
       order: [["updatedAt", "DESC"]],
     });
 
+    // Fetch user details (checking isActive or citizenActive)
     const userPromises = Array.from(
       new Set(
         conversations.flatMap((convo) => [
@@ -355,7 +380,16 @@ const searchConversations = async (req, res) => {
       )
     ).map((id) =>
       repositorySequelize.query(
-        `SELECT id, username, profilePhoto FROM Users WHERE id = ?`,
+        `
+        SELECT id, 
+               CASE 
+                 WHEN isActive = 0 OR citizenActive = 0 THEN 'skrolls.user' 
+                 ELSE username 
+               END AS username, 
+               profile_image 
+        FROM Users 
+        WHERE id = ?
+        `,
         {
           replacements: [id],
           type: repositorySequelize.QueryTypes.SELECT,
@@ -401,7 +435,7 @@ const searchConversations = async (req, res) => {
               : conversation.name,
           icon:
             conversation.type === "personal" && chatMembers.length > 0
-              ? userMap.get(chatMembers[0].userId)?.profilePhoto || null
+              ? userMap.get(chatMembers[0].userId)?.profile_image || null
               : conversation.icon,
           lastMessage: lastMessage
             ? {
