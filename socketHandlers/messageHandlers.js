@@ -106,18 +106,29 @@ exports.getMessages =
           "createdAt",
           [
             Sequelize.literal(`(
-            SELECT username
-            FROM repository.Users AS users
-            WHERE users.id = Messages.senderId
-          )`),
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN 'skrolls.user'
+                  ELSE username
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Messages.senderId
+            )`),
             "username",
           ],
+
           [
             Sequelize.literal(`(
-            SELECT profilePhoto
-            FROM repository.Users AS users
-            WHERE users.id = Messages.senderId
-          )`),
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN NULL
+                  ELSE profile_image
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Messages.senderId
+            )`),
             "profilePhoto",
           ],
         ],
@@ -129,17 +140,28 @@ exports.getMessages =
               include: [
                 [
                   Sequelize.literal(`(
-                    SELECT username
-                    FROM repository.Users AS users
-                    WHERE users.id = Messages.senderId
+                    SELECT 
+                      CASE
+                        WHEN (isActive = false OR citizenActive = false)
+                        THEN 'skrolls.user'
+                        ELSE username
+                      END
+                    FROM repository.Users
+                    WHERE repository.Users.id = Messages.senderId
                   )`),
                   "username",
                 ],
+
                 [
                   Sequelize.literal(`(
-                    SELECT profilePhoto
-                    FROM repository.Users AS users
-                    WHERE users.id = Messages.senderId
+                    SELECT 
+                      CASE
+                        WHEN (isActive = false OR citizenActive = false)
+                        THEN NULL
+                        ELSE profile_image
+                      END
+                    FROM repository.Users
+                    WHERE repository.Users.id = Messages.senderId
                   )`),
                   "profilePhoto",
                 ],

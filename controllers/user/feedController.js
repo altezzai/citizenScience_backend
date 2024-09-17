@@ -488,10 +488,24 @@ const getUserFeeds = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isActive", "citizenActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isActive || !user.citizenActive) {
+      return res.status(403).json({ error: "User is not active" });
+    }
     const feeds = await Feed.findAll({
       offset,
       limit,
-      where: { userId: userId },
+      where: {
+        userId: userId,
+      },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
