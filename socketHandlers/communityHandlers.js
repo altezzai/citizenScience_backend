@@ -50,17 +50,28 @@ exports.getCommunityMessagesAndFeeds =
           "createdAt",
           [
             Sequelize.literal(`(
-              SELECT username
-              FROM repository.Users AS users
-              WHERE users.id = Messages.senderId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN 'skrolls.user'
+                  ELSE username
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Messages.senderId
             )`),
             "username",
           ],
+
           [
             Sequelize.literal(`(
-              SELECT profilePhoto
-              FROM repository.Users AS users
-              WHERE users.id = Messages.senderId
+              SELECT 
+                CASE
+                  WHEN (isActive = false OR citizenActive = false)
+                  THEN NULL
+                  ELSE profile_image
+                END
+              FROM repository.Users
+              WHERE repository.Users.id = Messages.senderId
             )`),
             "profilePhoto",
           ],
@@ -73,18 +84,29 @@ exports.getCommunityMessagesAndFeeds =
               include: [
                 [
                   Sequelize.literal(`(
-                      SELECT username
-                      FROM repository.Users AS users
-                      WHERE users.id = Messages.senderId
-                    )`),
+                    SELECT 
+                      CASE
+                        WHEN (isActive = false OR citizenActive = false)
+                        THEN 'skrolls.user'
+                        ELSE username
+                      END
+                    FROM repository.Users
+                    WHERE repository.Users.id = Messages.senderId
+                  )`),
                   "username",
                 ],
+
                 [
                   Sequelize.literal(`(
-                      SELECT profilePhoto
-                      FROM repository.Users AS users
-                      WHERE users.id = Messages.senderId
-                    )`),
+                    SELECT 
+                      CASE
+                        WHEN (isActive = false OR citizenActive = false)
+                        THEN NULL
+                        ELSE profile_image
+                      END
+                    FROM repository.Users
+                    WHERE repository.Users.id = Messages.senderId
+                  )`),
                   "profilePhoto",
                 ],
               ],
@@ -116,6 +138,20 @@ exports.getCommunityMessagesAndFeeds =
           {
             model: Feed,
             attributes: ["id", "fileName", "description", "createdAt"],
+            where: {
+              [Sequelize.Op.and]: [
+                Sequelize.literal(`(
+                  SELECT isActive
+                  FROM repository.Users
+                  WHERE repository.Users.id = Feed.userId
+                ) = true`),
+                Sequelize.literal(`(
+                  SELECT citizenActive
+                  FROM repository.Users
+                  WHERE repository.Users.id = Feed.userId
+                ) = true`),
+              ],
+            },
           },
         ],
         limit,
@@ -137,7 +173,21 @@ exports.getCommunityMessagesAndFeeds =
       const cHashtagIds = communityHashtag.map((i) => i.hashtagId);
 
       const memberFeeds = await Feed.findAll({
-        where: { userId: memberIds },
+        where: {
+          userId: memberIds,
+          [Sequelize.Op.and]: [
+            Sequelize.literal(`(
+              SELECT isActive
+              FROM repository.Users
+              WHERE repository.Users.id = Feed.userId
+            ) = true`),
+            Sequelize.literal(`(
+              SELECT citizenActive
+              FROM repository.Users
+              WHERE repository.Users.id = Feed.userId
+            ) = true`),
+          ],
+        },
         include: [
           {
             model: PostHashtags,

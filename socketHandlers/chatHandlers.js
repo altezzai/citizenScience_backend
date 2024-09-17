@@ -339,17 +339,28 @@ exports.getChatMembers =
           include: [
             [
               Sequelize.literal(`(
-                SELECT username
-                FROM repository.Users AS users
-                WHERE users.id = ChatMembers.userId
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = ChatMembers.userId
               )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                SELECT profilePhoto
-                FROM repository.Users AS users
-                WHERE users.id = ChatMembers.userId
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = ChatMembers.userId
               )`),
               "profilePhoto",
             ],
@@ -457,7 +468,25 @@ exports.getUserConversations =
         where: {
           id: Array.from(userIds),
         },
-        attributes: ["id", "username", "profilePhoto"],
+        attributes: [
+          "id",
+          [
+            Sequelize.literal(`CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+            END`),
+            "username",
+          ],
+          [
+            Sequelize.literal(`CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+            END`),
+            "profilePhoto",
+          ],
+        ],
       });
 
       const userMap = {};
@@ -588,17 +617,28 @@ exports.getChatDetails =
           include: [
             [
               Sequelize.literal(`(
-                SELECT username
-                FROM repository.Users AS users
-                WHERE users.id = ChatMembers.userId
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN 'skrolls.user'
+                    ELSE username
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = ChatMembers.userId
               )`),
               "username",
             ],
+
             [
               Sequelize.literal(`(
-                SELECT profilePhoto
-                FROM repository.Users AS users
-                WHERE users.id = ChatMembers.userId
+                SELECT 
+                  CASE
+                    WHEN (isActive = false OR citizenActive = false)
+                    THEN NULL
+                    ELSE profile_image
+                  END
+                FROM repository.Users
+                WHERE repository.Users.id = ChatMembers.userId
               )`),
               "profilePhoto",
             ],

@@ -1,5 +1,6 @@
 const { skrollsSequelize } = require("../../config/connection");
 const Skills = require("../../models/skills");
+const User = require("../../models/user");
 const UserSkills = require("../../models/userskills");
 
 const addSkills = async (req, res) => {

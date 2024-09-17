@@ -1,5 +1,6 @@
 const { skrollsSequelize } = require("../../config/connection");
 const Experience = require("../../models/experience");
+const User = require("../../models/user");
 
 const addExperience = async (req, res) => {
   const { userId } = req.params;
