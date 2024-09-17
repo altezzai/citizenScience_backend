@@ -17,6 +17,7 @@ const Followers = require("../../models/followers");
 const Chats = require("../../models/chats");
 const CommunityFeeds = require("../../models/communityfeeds");
 const FeedViews = require("../../models/feedviews");
+const User = require("../../models/user");
 
 const addFeed = async (req, res) => {
   const { link, description, userId, mentionIds, hashTags, communityIds } =
@@ -50,6 +51,18 @@ const addFeed = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const fileName = files.map((file) => file.filename);
     const newFeed = await Feed.create(
       {
@@ -614,6 +627,7 @@ const getUserFeeds = async (req, res) => {
 };
 
 const updateFeed = async (req, res) => {
+  const userId = parseInt(req.query.userId);
   const { id } = req.params;
   const { link, description, mentionIds, hashTags, communityIds } = req.body;
 
@@ -628,6 +642,13 @@ const updateFeed = async (req, res) => {
     if (!feedExist) {
       // throw new Error("Feed not found");
       return res.status(404).json({ error: "Feed not found" });
+    }
+
+    if (feedExist.userId !== userId) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to update this feed" });
     }
 
     if (Object.keys(feedUpdateFields).length > 0) {
