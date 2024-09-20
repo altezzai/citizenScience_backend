@@ -80,7 +80,7 @@ router.put("/profile/experience/:id", experienceController.updateExperience);
 router.delete("/profile/experience/:id", experienceController.deleteExperience);
 
 //Education section
-router.post("/profile/:userId/education", educationController.addEducation);
+router.post("/profile/education", educationController.addEducation);
 router.get("/profile/:userId/education", educationController.getEducations);
 router.put("/profile/education/:id", educationController.updateEducation);
 router.delete("/profile/education/:id", educationController.deleteEducation);
