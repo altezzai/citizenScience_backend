@@ -64,9 +64,9 @@ router.post(
 );
 
 //Interest section
-router.post("/profile/:userId/interest", interestController.addInterest);
+router.post("/profile/interest", interestController.addInterest);
 router.get("/profile/:userId/interest", interestController.getUserInterests);
-router.put("/profile/:userId/interest", interestController.updateUserInterests);
+router.put("/profile/interest", interestController.updateUserInterests);
 
 //Skill section
 router.post("/profile/:userId/skill", skillController.addSkills);
