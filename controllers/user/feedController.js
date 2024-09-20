@@ -860,7 +860,7 @@ const deleteFeed = async (req, res) => {
     if (feedExist.userId !== userId) {
       return res
         .status(403)
-        .json({ error: "You are not authorized to update this feed" });
+        .json({ error: "You are not authorized to delete this feed" });
     }
     const deleted = await Feed.destroy({ where: { id } });
     if (deleted) {
