@@ -5,11 +5,11 @@ const {
 const User = require("../../models/user");
 
 const registerAsAuthor = async (req, res) => {
-  const id = req.user.id;
+  const userId = req.user.id;
   const isAuthor = req.query.isAuthor;
 
   try {
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(userId);
     if (user.isBanned) {
       return res.status(403).json({ error: "User account is banned" });
     }

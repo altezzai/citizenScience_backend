@@ -6,12 +6,12 @@ const {
 const User = require("../../models/user");
 
 const deactivateAccount = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
 
   try {
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
     }
 
     if (!user.citizenActive) {
@@ -30,12 +30,12 @@ const deactivateAccount = async (req, res) => {
 };
 
 const deleteAccount = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
 
   try {
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
     }
 
     if (!user.isActive) {
