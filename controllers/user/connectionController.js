@@ -9,7 +9,8 @@ const User = require("../../models/user");
 const { addNotification } = require("./notificationController");
 
 const follow = async (req, res) => {
-  const { followerId, followingId } = req.body;
+  const { followingId } = req.body;
+  const followerId = req.user.id;
 
   if (!followerId || !followingId || followerId === followingId) {
     return res.status(400).json({ error: "Invalid followerId or followingId" });
@@ -18,6 +19,14 @@ const follow = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const user = await User.findOne({
+      where: { id: followerId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const [relationship, created] = await Followers.findOrCreate({
       where: { followerId, followingId },
       transaction,
@@ -59,7 +68,6 @@ const follow = async (req, res) => {
 
 const followers = async (req, res) => {
   const followingId = parseInt(req.query.userId);
-  const userId = parseInt(req.query.currentUserId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
@@ -69,6 +77,8 @@ const followers = async (req, res) => {
   }
 
   try {
+    const userId = req.user.id;
+
     const followersList = await Followers.findAll({
       offset,
       limit,
@@ -179,7 +189,6 @@ const followers = async (req, res) => {
 
 const followings = async (req, res) => {
   const followerId = parseInt(req.query.userId);
-  const userId = parseInt(req.query.currentUserId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
@@ -189,6 +198,8 @@ const followings = async (req, res) => {
   }
 
   try {
+    const userId = req.user.id;
+
     const followingsList = await Followers.findAll({
       offset,
       limit,
