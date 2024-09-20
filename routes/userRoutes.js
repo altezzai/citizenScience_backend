@@ -74,7 +74,7 @@ router.get("/profile/:userId/skill", skillController.getUserSkills);
 router.put("/profile/skill", skillController.updateUserSkills);
 
 //Experience section
-router.post("/profile/:userId/experience", experienceController.addExperience);
+router.post("/profile/experience", experienceController.addExperience);
 router.get("/profile/:userId/experience", experienceController.getExperiences);
 router.put("/profile/experience/:id", experienceController.updateExperience);
 router.delete("/profile/experience/:id", experienceController.deleteExperience);
