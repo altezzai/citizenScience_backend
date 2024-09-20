@@ -3,10 +3,18 @@ const Experience = require("../../models/experience");
 const User = require("../../models/user");
 
 const addExperience = async (req, res) => {
-  const { userId } = req.params;
   const { workspace, position, startDate, endDate } = req.body;
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const newExperience = await Experience.create({
       userId,
       workspace,
@@ -54,7 +62,17 @@ const updateExperience = async (req, res) => {
   const { workspace, position, startDate, endDate } = req.body;
 
   try {
-    const experience = await Experience.findOne({ where: { id } });
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
+    const experience = await Experience.findOne({ where: { id, userId } });
 
     if (!experience) {
       return res.status(404).json({ error: "Experience not found" });
@@ -77,7 +95,23 @@ const updateExperience = async (req, res) => {
 const deleteExperience = async (req, res) => {
   const { id } = req.params;
   try {
-    await Experience.destroy({ where: { id } });
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+    const experience = await Experience.findOne({
+      where: { id, userId },
+    });
+
+    if (!experience) {
+      return res.status(404).json({ error: "Experience not found" });
+    }
+    await Experience.destroy({ where: { id, userId } });
     res.status(200).json({ message: "Experience deleted successfully" });
   } catch (error) {
     console.error("Error deleting Experience", error);

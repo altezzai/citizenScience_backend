@@ -17,10 +17,10 @@ const Followers = require("../../models/followers");
 const Chats = require("../../models/chats");
 const CommunityFeeds = require("../../models/communityfeeds");
 const FeedViews = require("../../models/feedviews");
+const User = require("../../models/user");
 
 const addFeed = async (req, res) => {
-  const { link, description, userId, mentionIds, hashTags, communityIds } =
-    req.body;
+  const { link, description, mentionIds, hashTags, communityIds } = req.body;
   const files = req.files || [];
 
   let parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : [];
@@ -50,6 +50,15 @@ const addFeed = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const fileName = files.map((file) => file.filename);
     const newFeed = await Feed.create(
       {
@@ -141,12 +150,12 @@ const addFeed = async (req, res) => {
 };
 
 const getFeeds = async (req, res) => {
-  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
     const followers = await Followers.findAll({
       where: { followerId: userId },
       attributes: ["followingId"],
@@ -283,12 +292,12 @@ const getFeeds = async (req, res) => {
 
 const getFeed = async (req, res) => {
   const { feedId } = req.params;
-  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
     const feed = await Feed.findByPk(feedId, {
       attributes: {
         include: [
@@ -488,6 +497,7 @@ const getUserFeeds = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
+    const currentUserId = req.user.id;
     const user = await User.findOne({
       where: { id: userId },
       attributes: ["isActive", "citizenActive"],
@@ -586,14 +596,14 @@ const getUserFeeds = async (req, res) => {
           model: Like,
           attributes: ["id"],
           where: {
-            userId: userId,
+            userId: currentUserId,
           },
           required: false,
         },
         {
           model: SavedFeeds,
           attributes: ["id"],
-          where: { userId: userId },
+          where: { userId: currentUserId },
           required: false,
         },
       ],
@@ -620,6 +630,15 @@ const updateFeed = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const feedUpdateFields = {};
     if (link !== undefined) feedUpdateFields.link = link;
     if (description !== undefined) feedUpdateFields.description = description;
@@ -628,6 +647,13 @@ const updateFeed = async (req, res) => {
     if (!feedExist) {
       // throw new Error("Feed not found");
       return res.status(404).json({ error: "Feed not found" });
+    }
+
+    if (feedExist.userId !== userId) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to update this feed" });
     }
 
     if (Object.keys(feedUpdateFields).length > 0) {
@@ -817,11 +843,28 @@ const deleteFeed = async (req, res) => {
   const { id } = req.params;
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+    const feedExist = await Feed.findByPk(id);
+    if (!feedExist) {
+      return res.status(404).json({ error: "Feed not found" });
+    }
+
+    if (feedExist.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to delete this feed" });
+    }
     const deleted = await Feed.destroy({ where: { id } });
     if (deleted) {
       res.status(200).json({ message: "Feed deleted successfully" });
-    } else {
-      res.status(404).json({ error: "Feed not found" });
     }
   } catch (error) {
     console.error("Error deleting feed:", error);
@@ -830,10 +873,12 @@ const deleteFeed = async (req, res) => {
 };
 
 const updateCounts = async (req, res) => {
-  const { viewList, shareList, userId } = req.body;
+  const { viewList, shareList } = req.body;
 
   const transaction = await skrollsSequelize.transaction();
   try {
+    const userId = req.user.id;
+
     const allFeedIds = [...new Set([...viewList, ...shareList])];
 
     const existingFeeds = await Feed.findAll({

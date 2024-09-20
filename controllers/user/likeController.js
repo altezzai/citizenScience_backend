@@ -10,10 +10,19 @@ const Comments = require("../../models/comments");
 const Notifications = require("../../models/notifications");
 
 const addLike = async (req, res) => {
-  const { userId, feedIds = [], commentIds = [] } = req.body;
+  const { feedIds = [], commentIds = [] } = req.body;
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const existingFeeds = await Feed.findAll({
       where: {
         id: {
@@ -149,12 +158,13 @@ const addLike = async (req, res) => {
 
 const getFeedLikes = async (req, res) => {
   const { feedId } = req.params;
-  const userId = req.query.userId ? parseInt(req.query.userId) : null;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
+
     const feedLikes = await Like.findAll({
       offset,
       limit,
@@ -259,12 +269,13 @@ const getFeedLikes = async (req, res) => {
 };
 const getCommentLikes = async (req, res) => {
   const { commentId } = req.params;
-  const userId = req.query.userId ? parseInt(req.query.userId) : null;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
+
     const feedLikes = await Like.findAll({
       offset,
       limit,

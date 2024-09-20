@@ -13,9 +13,18 @@ const Like = require("../../models/like");
 
 const addComment = async (req, res) => {
   const { feedId } = req.params;
-  const { userId, comment, mentionIds, parentId } = req.body;
+  const { comment, mentionIds, parentId } = req.body;
   const transaction = await skrollsSequelize.transaction();
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
 
     const feed = await Feed.findByPk(feedId, { transaction });
@@ -93,12 +102,13 @@ const addComment = async (req, res) => {
 
 const getComments = async (req, res) => {
   const { feedId } = req.params;
-  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
+
     const comments = await Comments.findAll({
       offset,
       limit,
@@ -204,12 +214,13 @@ const getComments = async (req, res) => {
 
 const getReplies = async (req, res) => {
   const { feedId, commentId } = req.params;
-  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 30;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
+
     const replies = await Comments.findAll({
       offset,
       limit,
@@ -313,7 +324,27 @@ const updateComment = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
     const commentInstance = await Comments.findByPk(commentId, { transaction });
+    if (!commentInstance) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    if (commentInstance.userId !== userId) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to update this Comment" });
+    }
 
     const updatedComment = await Comments.update(
       { comment },
@@ -396,6 +427,26 @@ const deleteComment = async (req, res) => {
   const { commentId } = req.params;
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
+    const commentInstance = await Comments.findByPk(commentId);
+    if (!commentInstance) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    if (commentInstance.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to delete this Comment" });
+    }
     const deletedComment = await Comments.destroy({ where: { id: commentId } });
 
     if (!deletedComment) {

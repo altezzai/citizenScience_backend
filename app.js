@@ -3,6 +3,7 @@ const cors = require("cors");
 const http = require("http");
 const userRoutes = require("./routes/userRoutes");
 const socketHandler = require("./socketHandlers/socket");
+const auth = require("./middleware/authMiddleware");
 const {
   skrollsSequelize,
   repositorySequelize,
@@ -19,6 +20,8 @@ const io = require("socket.io")(server, {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extend: true }));
+
+app.use(auth);
 
 app.use("/uploads", express.static("uploads"));
 

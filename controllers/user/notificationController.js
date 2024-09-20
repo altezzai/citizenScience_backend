@@ -87,6 +87,7 @@ const addNotification = async (
 
 const markNotificationAsRead = async (req, res) => {
   const { notificationIds } = req.body;
+  const userId = req.user.id;
 
   if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
     return res
@@ -100,6 +101,7 @@ const markNotificationAsRead = async (req, res) => {
       {
         where: {
           id: notificationIds,
+          userId,
         },
       }
     );
@@ -107,7 +109,7 @@ const markNotificationAsRead = async (req, res) => {
     if (result[0] === 0) {
       return res
         .status(404)
-        .json({ error: "No notifications found to update" });
+        .json({ error: "No notifications found to update " });
     }
 
     res.status(200).json({
@@ -121,11 +123,12 @@ const markNotificationAsRead = async (req, res) => {
 };
 
 const getUserNotifications = async (req, res) => {
-  const userId = parseInt(req.query.userId);
   const limit = parseInt(req.query.limit) || 100;
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
   try {
+    const userId = req.user.id;
+
     const notifications = await Notifications.findAll({
       where: { userId },
       order: [["createdAt", "DESC"]],

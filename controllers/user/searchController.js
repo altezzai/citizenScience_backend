@@ -14,7 +14,7 @@ const Hashtags = require("../../models/hashtags");
 const CommunityHashtags = require("../../models/communityhashtags");
 
 const searchUsers = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
   const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
@@ -90,7 +90,7 @@ const searchUsers = async (req, res) => {
 };
 
 const searchFeedHashtags = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
   const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
@@ -210,7 +210,7 @@ const searchHashtags = async (req, res) => {
 };
 
 const searchCommunities = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
   const searchQuery = req.query.q;
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
@@ -250,7 +250,7 @@ const searchCommunities = async (req, res) => {
 
 const searchMembers = async (req, res) => {
   const { chatId } = req.params;
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
   const searchItem = req.query.q;
 
   try {
@@ -305,7 +305,7 @@ const searchMembers = async (req, res) => {
 };
 
 const searchConversations = async (req, res) => {
-  const userId = parseInt(req.query.userId);
+  const userId = req.user.id;
   const searchString = req.query.q;
 
   try {

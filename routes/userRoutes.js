@@ -16,11 +16,12 @@ const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
 const accountSettingsController = require("../controllers/user/accountSettingsController");
 const upload = require("../config/uploadConfig");
+const auth = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/feeds", upload.array("files", 10), feedController.addFeed);
-router.get("/feeds", feedController.getFeeds);
+router.post("/feeds", auth, upload.array("files", 10), feedController.addFeed);
+router.get("/feeds", auth, feedController.getFeeds);
 router.get("/feeds/:feedId", feedController.getFeed);
 router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
@@ -63,23 +64,23 @@ router.post(
 );
 
 //Interest section
-router.post("/profile/:userId/interest", interestController.addInterest);
+router.post("/profile/interest", interestController.addInterest);
 router.get("/profile/:userId/interest", interestController.getUserInterests);
-router.put("/profile/:userId/interest", interestController.updateUserInterests);
+router.put("/profile/interest", interestController.updateUserInterests);
 
 //Skill section
-router.post("/profile/:userId/skill", skillController.addSkills);
+router.post("/profile/skill", skillController.addSkills);
 router.get("/profile/:userId/skill", skillController.getUserSkills);
-router.put("/profile/:userId/skill", skillController.updateUserSkills);
+router.put("/profile/skill", skillController.updateUserSkills);
 
 //Experience section
-router.post("/profile/:userId/experience", experienceController.addExperience);
+router.post("/profile/experience", experienceController.addExperience);
 router.get("/profile/:userId/experience", experienceController.getExperiences);
 router.put("/profile/experience/:id", experienceController.updateExperience);
 router.delete("/profile/experience/:id", experienceController.deleteExperience);
 
 //Education section
-router.post("/profile/:userId/education", educationController.addEducation);
+router.post("/profile/education", educationController.addEducation);
 router.get("/profile/:userId/education", educationController.getEducations);
 router.put("/profile/education/:id", educationController.updateEducation);
 router.delete("/profile/education/:id", educationController.deleteEducation);

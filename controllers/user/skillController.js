@@ -4,7 +4,6 @@ const User = require("../../models/user");
 const UserSkills = require("../../models/userskills");
 
 const addSkills = async (req, res) => {
-  const { userId } = req.params;
   const { skillList } = req.body;
   if (!Array.isArray(skillList) || skillList.some((skill) => skill === "")) {
     return res.status(400).json({
@@ -14,6 +13,16 @@ const addSkills = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
     for (let skill of skillList) {
       let [skillRecord, created] = await Skills.findOrCreate({
         where: { skill },
@@ -83,7 +92,6 @@ const getUserSkills = async (req, res) => {
 };
 
 const updateUserSkills = async (req, res) => {
-  const { userId } = req.params;
   const { skillList } = req.body;
 
   if (!Array.isArray(skillList) || skillList.some((skill) => skill === "")) {
@@ -95,6 +103,15 @@ const updateUserSkills = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const existingUserSkills = await UserSkills.findAll({
       where: { userId },
       include: [{ model: Skills, attributes: ["skill"] }],

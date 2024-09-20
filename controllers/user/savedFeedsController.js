@@ -6,12 +6,22 @@ const {
 } = require("../../config/connection");
 const Feed = require("../../models/feed");
 const SavedFeeds = require("../../models/savedfeeds");
+const User = require("../../models/user");
 
 const saveFeed = async (req, res) => {
-  const { userId, feedId } = req.body;
+  const { feedId } = req.body;
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
     const feed = await Feed.findByPk(feedId, { transaction });
     if (!feed) {
       throw new Error("Feed not found");
@@ -43,12 +53,13 @@ const saveFeed = async (req, res) => {
 };
 
 const getSavedFeeds = async (req, res) => {
-  const userId = parseInt(req.query.userId);
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
   try {
+    const userId = req.user.id;
+
     const savedfeeds = await SavedFeeds.findAll({
       offset,
       limit,

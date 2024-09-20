@@ -8,7 +8,7 @@ const UserInterests = require("../../models/userinterests");
 const User = require("../../models/user");
 
 const addInterest = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id;
   const { interestList } = req.body;
   if (
     !Array.isArray(interestList) ||
@@ -21,6 +21,15 @@ const addInterest = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
     for (let interest of interestList) {
       let [interestRecord, created] = await Interests.findOrCreate({
         where: { interest },
@@ -89,7 +98,6 @@ const getUserInterests = async (req, res) => {
 };
 
 const updateUserInterests = async (req, res) => {
-  const { userId } = req.params;
   const { interestList } = req.body;
 
   if (
@@ -104,6 +112,16 @@ const updateUserInterests = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const userId = req.user.id;
+    const user = await User.findOne({
+      where: { id: userId },
+      attributes: ["isBanned"],
+    });
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "User account is banned" });
+    }
+
     const existingUserInterests = await UserInterests.findAll({
       where: { userId },
       include: [{ model: Interests, attributes: ["interest"] }],
