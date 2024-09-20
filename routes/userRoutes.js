@@ -16,11 +16,12 @@ const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
 const accountSettingsController = require("../controllers/user/accountSettingsController");
 const upload = require("../config/uploadConfig");
+const auth = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/feeds", upload.array("files", 10), feedController.addFeed);
-router.get("/feeds", feedController.getFeeds);
+router.post("/feeds", auth, upload.array("files", 10), feedController.addFeed);
+router.get("/feeds", auth, feedController.getFeeds);
 router.get("/feeds/:feedId", feedController.getFeed);
 router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
