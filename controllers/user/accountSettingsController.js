@@ -10,9 +10,9 @@ const deactivateAccount = async (req, res) => {
 
   try {
     const user = await User.findByPk(userId);
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
 
     if (!user.citizenActive) {
       return res.status(409).json({ error: "Account is already deactivated" });
@@ -34,9 +34,9 @@ const deleteAccount = async (req, res) => {
 
   try {
     const user = await User.findByPk(userId);
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
 
     if (!user.isActive) {
       return res.status(409).json({ error: "Account is already deleted" });

@@ -19,14 +19,14 @@ const follow = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
 
   try {
-    const user = await User.findOne({
-      where: { id: followerId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: followerId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const [relationship, created] = await Followers.findOrCreate({
       where: { followerId, followingId },
       transaction,

@@ -72,10 +72,18 @@ const profileDetails = async (req, res) => {
 };
 
 const addOtherIds = async (req, res) => {
-  const { userId } = req.params;
   const { name, link } = req.body;
 
   try {
+    const userId = req.user.id;
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
+
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const newId = await OtherIds.create({
       userId,
       name,
@@ -121,7 +129,16 @@ const updateOtherIds = async (req, res) => {
   const { name, link } = req.body;
 
   try {
-    const otherid = await OtherIds.findOne({ where: { id } });
+    const userId = req.user.id;
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
+
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
+    const otherid = await OtherIds.findOne({ where: { id, userId } });
 
     if (!otherid) {
       return res.status(404).json({ error: "OtherIds not found" });
@@ -142,7 +159,23 @@ const updateOtherIds = async (req, res) => {
 const deleteOtherIds = async (req, res) => {
   const { id } = req.params;
   try {
-    await OtherIds.destroy({ where: { id } });
+    const userId = req.user.id;
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
+
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
+
+    const otherid = await OtherIds.findOne({ where: { id, userId } });
+
+    if (!otherid) {
+      return res.status(404).json({ error: "OtherIds not found" });
+    }
+
+    await otherid.destroy({ where: { id, userId } });
     res.status(200).json({ message: "OtherId deleted successfully" });
   } catch (error) {
     console.error("Error deleting OtherId", error);

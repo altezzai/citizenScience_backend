@@ -51,14 +51,14 @@ const addFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const fileName = files.map((file) => file.filename);
     const newFeed = await Feed.create(
       {
@@ -631,14 +631,14 @@ const updateFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const feedUpdateFields = {};
     if (link !== undefined) feedUpdateFields.link = link;
     if (description !== undefined) feedUpdateFields.description = description;
@@ -844,14 +844,14 @@ const deleteFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const feedExist = await Feed.findByPk(id);
     if (!feedExist) {
       return res.status(404).json({ error: "Feed not found" });

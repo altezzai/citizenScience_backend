@@ -19,7 +19,6 @@ exports.createChat =
   async ({
     type,
     name,
-    createdBy,
     icon,
     description,
     members,
@@ -28,6 +27,8 @@ exports.createChat =
     mediaUrl,
     sentAt,
   }) => {
+    const createdBy = req.user.id;
+
     const transaction = await skrollsSequelize.transaction();
     try {
       if ((type === "group" || type === "community") && !name) {
