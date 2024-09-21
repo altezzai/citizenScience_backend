@@ -17,14 +17,14 @@ const addComment = async (req, res) => {
   const transaction = await skrollsSequelize.transaction();
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
 
     const feed = await Feed.findByPk(feedId, { transaction });
@@ -325,14 +325,14 @@ const updateComment = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
 
     const commentInstance = await Comments.findByPk(commentId, { transaction });
     if (!commentInstance) {
@@ -428,14 +428,14 @@ const deleteComment = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
 
     const commentInstance = await Comments.findByPk(commentId);
     if (!commentInstance) {

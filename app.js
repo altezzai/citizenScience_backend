@@ -4,6 +4,7 @@ const http = require("http");
 const userRoutes = require("./routes/userRoutes");
 const socketHandler = require("./socketHandlers/socket");
 const auth = require("./middleware/authMiddleware");
+const socketAuth = require("./middleware/socketAuthMiddleware");
 const {
   skrollsSequelize,
   repositorySequelize,
@@ -53,6 +54,8 @@ const syncDatabase = async () => {
     console.error("Unable to connect to the databases:", error);
   }
 };
+
+io.use(socketAuth);
 
 io.on("connection", (socket) => {
   socketHandler(io, socket);

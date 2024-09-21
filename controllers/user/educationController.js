@@ -7,14 +7,14 @@ const addEducation = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const newEducation = await Educations.create({
       userId,
       institution,
@@ -63,14 +63,14 @@ const updateEducation = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const education = await Educations.findOne({ where: { id, userId } });
 
     if (!education) {
@@ -95,14 +95,14 @@ const deleteEducation = async (req, res) => {
   const { id } = req.params;
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const education = await Educations.findOne({
       where: { id, userId },
     });

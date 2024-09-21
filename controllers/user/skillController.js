@@ -14,14 +14,14 @@ const addSkills = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
 
     for (let skill of skillList) {
       let [skillRecord, created] = await Skills.findOrCreate({
@@ -104,14 +104,14 @@ const updateUserSkills = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const user = await User.findOne({
-      where: { id: userId },
-      attributes: ["isBanned"],
-    });
+    // const user = await User.findOne({
+    //   where: { id: userId },
+    //   attributes: ["isBanned"],
+    // });
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: "User account is banned" });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: "User account is banned" });
+    // }
     const existingUserSkills = await UserSkills.findAll({
       where: { userId },
       include: [{ model: Skills, attributes: ["skill"] }],

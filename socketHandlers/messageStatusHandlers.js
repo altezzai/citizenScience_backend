@@ -10,10 +10,12 @@ const MessageStatuses = require("../models/messagestatuses");
 
 exports.messageReceived =
   (io, socket) =>
-  async ({ messageId, userId }) => {
+  async ({ messageId }) => {
     let transaction;
 
     try {
+      const userId = socket.user.id;
+
       transaction = await skrollsSequelize.transaction();
 
       const [updatedRows] = await MessageStatuses.update(
@@ -45,8 +47,10 @@ exports.messageReceived =
 
 exports.messageRead =
   (io, socket) =>
-  async ({ messageId, userId }) => {
+  async ({ messageId }) => {
     try {
+      const userId = socket.user.id;
+
       transaction = await skrollsSequelize.transaction();
 
       const [updatedRows] = await MessageStatuses.update(

@@ -16,8 +16,9 @@ const ChatMembers = require("../models/chatmembers");
 
 exports.getCommunityMessagesAndFeeds =
   (io, socket) =>
-  async ({ userId, chatId, page = 1, limit = 20 }) => {
+  async ({ chatId, page = 1, limit = 20 }) => {
     try {
+      const userId = socket.user.id;
       const offset = (page - 1) * limit;
       const deletedChat = await DeletedChats.findOne({
         where: {
