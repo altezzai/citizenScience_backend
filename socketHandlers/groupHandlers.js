@@ -11,10 +11,11 @@ const User = require("../models/user");
 
 exports.addMemberToChat =
   (io, socket) =>
-  async ({ chatId, userId, addedBy }) => {
+  async ({ chatId, userId }) => {
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
     try {
+      const addedBy = socket.user.id;
       const chat = await Chats.findOne({
         where: {
           id: chatId,
@@ -121,10 +122,11 @@ exports.addMemberToChat =
 
 exports.makeAdmin =
   (io, socket) =>
-  async ({ chatId, userId, madeBy }) => {
+  async ({ chatId, userId }) => {
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
     try {
+      const madeBy = socket.user.id;
       const requester = await ChatMembers.findOne({
         where: { chatId, userId: madeBy },
         transaction: skrollsTransaction,
@@ -190,10 +192,11 @@ exports.makeAdmin =
 
 exports.removeMemberFromChat =
   (io, socket) =>
-  async ({ chatId, userId, removedBy }) => {
+  async ({ chatId, userId }) => {
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
     try {
+      const removedBy = socket.user.id;
       const chat = await Chats.findOne({
         where: {
           id: chatId,

@@ -12,10 +12,11 @@ const DeletedMessages = require("../models/deletedmessages");
 const DeletedChats = require("../models/deletedchats");
 
 exports.sendMessage = (io, socket) => async (data) => {
-  const { chatId, senderId, content, mediaUrl, replyToId, sentAt } = data;
+  const { chatId, content, mediaUrl, replyToId, sentAt } = data;
   const transaction = await skrollsSequelize.transaction();
 
   try {
+    const senderId = socket.user.id;
     const chat = await Chats.findByPk(chatId, { transaction });
 
     if (chat) {
@@ -72,8 +73,10 @@ exports.sendMessage = (io, socket) => async (data) => {
 
 exports.getMessages =
   (io, socket) =>
-  async ({ userId, chatId, page = 1, limit = 20 }) => {
+  async ({ chatId, page = 1, limit = 20 }) => {
     try {
+      const userId = socket.user.id;
+
       const offset = (page - 1) * limit;
       const deletedChat = await DeletedChats.findOne({
         where: {
@@ -197,14 +200,16 @@ exports.getMessages =
 
 exports.deleteMessage =
   (io, socket) =>
-  async ({ userId, messageId, deleteForEveryone = false, deletedAt }) => {
+  async ({ messageId, deleteForEveryone = false, deletedAt }) => {
     try {
+      const userId = socket.user.id;
+
       if (deleteForEveryone) {
         await Messages.update(
           { deleteForEveryone: true },
-          { where: { id: messageId } }
+          { where: { id: messageId, senderId: userId } } //senderId check for delete for everyone
         );
-        io.emit("message deleted foe everyone", { messageId });
+        io.emit("message deleted for everyone", { messageId });
       } else {
         await DeletedMessages.create({
           userId,

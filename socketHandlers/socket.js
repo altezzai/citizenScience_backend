@@ -6,7 +6,7 @@ const communityHandlers = require("./communityHandlers");
 const messageStatusHandlers = require("./messageStatusHandlers");
 
 module.exports = (io, socket) => {
-  console.log("A user Connected");
+  console.log(`User connected: ${socket.user.id}`);
 
   //basic Section
 

@@ -9,7 +9,7 @@ const ChatMembers = require("../models/chatmembers");
 exports.joinChat =
   (io, socket) =>
   async ({ chatId }) => {
-    const userId = req.user.id;
+    const userId = socket.user.id;
     const chat = await Chats.findByPk(chatId);
     if (!chat) {
       socket.emit("error", "Chat does not exist.");
@@ -36,7 +36,7 @@ exports.joinChat =
 exports.leaveChat =
   (io, socket) =>
   async ({ chatId }) => {
-    const userId = req.user.id;
+    const userId = socket.user.id;
     const chat = await Chats.findByPk(chatId);
     if (!chat) {
       socket.emit("error", "Chat does not exist.");

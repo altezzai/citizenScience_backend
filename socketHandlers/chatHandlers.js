@@ -27,7 +27,7 @@ exports.createChat =
     mediaUrl,
     sentAt,
   }) => {
-    const createdBy = req.user.id;
+    const createdBy = socket.user.id;
 
     const transaction = await skrollsSequelize.transaction();
     try {
@@ -159,9 +159,10 @@ exports.createChat =
 
 exports.updateChat =
   (io, socket) =>
-  async ({ chatId, name, icon, description, userId, hashtags }) => {
+  async ({ chatId, name, icon, description, hashtags }) => {
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
+    const userId = socket.user.id;
 
     try {
       const chat = await Chats.findOne({
@@ -389,8 +390,10 @@ exports.getChatMembers =
 
 exports.deleteChat =
   (io, socket) =>
-  async ({ userId, chatId, deletedAt }) => {
+  async ({ chatId, deletedAt }) => {
     try {
+      const userId = socket.user.id;
+
       const chat = await Chats.findByPk(chatId);
       if (!chat) {
         socket.emit("error", "Chat not found or not a group/community.");
@@ -411,8 +414,10 @@ exports.deleteChat =
 
 exports.getUserConversations =
   (io, socket) =>
-  async ({ userId, type }) => {
+  async ({ type }) => {
     try {
+      const userId = socket.user.id;
+
       const conversations = await Chats.findAll({
         include: [
           {
