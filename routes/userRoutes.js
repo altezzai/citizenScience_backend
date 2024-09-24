@@ -82,6 +82,7 @@ router.post(
   upload.array("files", 10),
   chatController.mediaUpload
 );
+router.get("/chat/recentChats", auth, chatController.recentChats);
 
 //Interest section
 router.post("/profile/interest", auth, interestController.addInterest);
