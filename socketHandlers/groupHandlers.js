@@ -279,7 +279,7 @@ exports.removeMemberFromChat =
 
       await skrollsTransaction.commit();
       await repositoryTransaction.commit();
-      io.to(chatId).emit("memberRemoved", {
+      socket.emit("memberRemoved", {
         chatId,
         userId,
         removedBy,
@@ -290,5 +290,114 @@ exports.removeMemberFromChat =
       await repositoryTransaction.rollback();
       console.error("Error removing member from chat:", error);
       socket.emit("error", "Failed to remove member from chat.");
+    }
+  };
+
+exports.leaveChat =
+  (io, socket) =>
+  async ({ chatId }) => {
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
+    try {
+      const userId = socket.user.id;
+
+      const chat = await Chats.findOne({
+        where: {
+          id: chatId,
+          type: { [Op.in]: ["group", "community"] },
+        },
+        transaction: skrollsTransaction,
+      });
+
+      if (!chat) {
+        socket.emit("error", "Chat not found or not a group/community.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return;
+      }
+
+      const member = await ChatMembers.findOne({
+        where: {
+          chatId,
+          userId,
+        },
+        transaction: skrollsTransaction,
+      });
+
+      if (!member) {
+        socket.emit("error", "You are not a member of this chat.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return;
+      }
+
+      if (member.isAdmin) {
+        const otherAdmins = await ChatMembers.findAll({
+          where: {
+            chatId,
+            userId: { [Op.ne]: userId },
+            isAdmin: true,
+          },
+          transaction: skrollsTransaction,
+        });
+
+        if (otherAdmins.length === 0) {
+          socket.emit(
+            "error",
+            "You are the last admin. Please assign a new admin before leaving the chat."
+          );
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return;
+        }
+      }
+
+      await ChatMembers.destroy({
+        where: {
+          chatId,
+          userId,
+        },
+        transaction: skrollsTransaction,
+      });
+
+      const user = await User.findOne({
+        where: { id: userId },
+        attributes: ["username"],
+        transaction: repositoryTransaction,
+      });
+
+      if (!user) {
+        socket.emit("error", "User not found.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return;
+      }
+
+      const exitMessage = await Messages.create(
+        {
+          chatId,
+          senderId: userId,
+          content: `${user.username} has left the chat.`,
+          messageType: "system",
+          mediaUrl: null,
+          overallStatus: "sent",
+          sentAt: new Date(),
+        },
+        { transaction: skrollsTransaction }
+      );
+
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
+
+      socket.emit("memberLeaved", {
+        chatId,
+        userId,
+        exitMessage,
+      });
+    } catch (error) {
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
+      console.error("Error leaving chat:", error);
+      socket.emit("error", "Failed to exit the chat.");
     }
   };
