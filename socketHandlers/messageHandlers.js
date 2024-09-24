@@ -18,50 +18,59 @@ exports.sendMessage = (io, socket) => async (data) => {
   try {
     const senderId = socket.user.id;
     const chat = await Chats.findByPk(chatId, { transaction });
-
-    if (chat) {
-      const message = await Messages.create(
-        {
-          chatId,
-          senderId,
-          content,
-          mediaUrl,
-          replyToId,
-          overallStatus: "sent",
-          sentAt: sentAt ? new Date(sentAt) : new Date(),
-        },
-        { transaction }
-      );
-
-      const members = await ChatMembers.findAll({
-        where: { chatId },
-        transaction,
-      });
-
-      await Promise.all(
-        members
-          .filter((member) => member.userId !== senderId)
-          .map((member) =>
-            MessageStatuses.create(
-              {
-                messageId: message.id,
-                userId: member.userId,
-                status: "sent",
-                sentAt: sentAt ? new Date(sentAt) : new Date(),
-              },
-              { transaction }
-            )
-          )
-      );
-
-      await transaction.commit();
-
-      io.to(chatId).emit("newMessage", message);
-    } else {
-      await transaction.rollback();
-      console.log("Chat not found.");
+    if (!chat) {
       socket.emit("error", "Chat not found.");
+      return;
     }
+    const isMember = await ChatMembers.findOne({
+      where: {
+        chatId,
+        userId: senderId,
+      },
+    });
+
+    if (!isMember) {
+      socket.emit("error", "User is not a member of this chat.");
+      return;
+    }
+
+    const message = await Messages.create(
+      {
+        chatId,
+        senderId,
+        content,
+        mediaUrl,
+        replyToId,
+        overallStatus: "sent",
+        sentAt: sentAt ? new Date(sentAt) : new Date(),
+      },
+      { transaction }
+    );
+
+    const members = await ChatMembers.findAll({
+      where: { chatId },
+      transaction,
+    });
+
+    await Promise.all(
+      members
+        .filter((member) => member.userId !== senderId)
+        .map((member) =>
+          MessageStatuses.create(
+            {
+              messageId: message.id,
+              userId: member.userId,
+              status: "sent",
+              sentAt: sentAt ? new Date(sentAt) : new Date(),
+            },
+            { transaction }
+          )
+        )
+    );
+
+    await transaction.commit();
+
+    socket.emit("newMessage", message);
   } catch (error) {
     await transaction.rollback();
     console.error("Error sending message:", error);
@@ -76,6 +85,17 @@ exports.getMessages =
   async ({ chatId, page = 1, limit = 20 }) => {
     try {
       const userId = socket.user.id;
+      const isMember = await ChatMembers.findOne({
+        where: {
+          chatId,
+          userId,
+        },
+      });
+
+      if (!isMember) {
+        socket.emit("error", "User is not a member of this chat.");
+        return;
+      }
 
       const offset = (page - 1) * limit;
       const deletedChat = await DeletedChats.findOne({
@@ -209,7 +229,7 @@ exports.deleteMessage =
           { deleteForEveryone: true },
           { where: { id: messageId, senderId: userId } } //senderId check for delete for everyone
         );
-        io.emit("message deleted for everyone", { messageId });
+        socket.emit("message deleted for everyone", { messageId });
       } else {
         await DeletedMessages.create({
           userId,
