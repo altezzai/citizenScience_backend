@@ -13,6 +13,94 @@ const PostHashtags = require("../models/posthashtags");
 
 const Hashtags = require("../models/hashtags");
 const ChatMembers = require("../models/chatmembers");
+const Chats = require("../models/chats");
+const User = require("../models/user");
+
+exports.joinChat =
+  (io, socket) =>
+  async ({ chatId }) => {
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
+
+    try {
+      const userId = socket.user.id;
+
+      const chat = await Chats.findOne({
+        where: {
+          id: chatId,
+          type: "community",
+        },
+        transaction: skrollsTransaction,
+      });
+
+      if (!chat) {
+        socket.emit("error", "Chat does not exist or is not a community.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return;
+      }
+
+      let isMember = await ChatMembers.findOne({
+        where: {
+          chatId,
+          userId,
+        },
+        transaction: skrollsTransaction,
+      });
+
+      if (isMember) {
+        socket.emit("error", "User is already a member of the community.");
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return;
+      } else {
+        await ChatMembers.create(
+          {
+            chatId,
+            userId,
+            isAdmin: false,
+          },
+          { transaction: skrollsTransaction }
+        );
+
+        const user = await User.findOne({
+          where: { id: userId },
+          attributes: ["username"],
+          transaction: repositoryTransaction,
+        });
+
+        if (!user) {
+          socket.emit("error", "User not found.");
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return;
+        }
+
+        await Messages.create(
+          {
+            chatId,
+            senderId: userId,
+            content: `${user.username} has joined the community.`,
+            messageType: "system",
+            mediaUrl: null,
+            overallStatus: "sent",
+            sentAt: new Date(),
+          },
+          { transaction: skrollsTransaction }
+        );
+        await skrollsTransaction.commit();
+        await repositoryTransaction.commit();
+
+        socket.emit("joinedChat", { chatId });
+        // socket.join(chatId);
+      }
+    } catch (error) {
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
+      console.error("Error joining chat:", error);
+      socket.emit("error", "An error occurred while joining the chat.");
+    }
+  };
 
 exports.getCommunityMessagesAndFeeds =
   (io, socket) =>

@@ -1,5 +1,4 @@
 const chatHandlers = require("./chatHandlers");
-const basicHandlers = require("./basicHandlers");
 const messageHandlers = require("./messageHandlers");
 const groupHandlers = require("./groupHandlers");
 const communityHandlers = require("./communityHandlers");
@@ -7,11 +6,6 @@ const messageStatusHandlers = require("./messageStatusHandlers");
 
 module.exports = (io, socket) => {
   console.log(`User connected: ${socket.user.id}`);
-
-  //basic Section
-
-  socket.on("joinChat", basicHandlers.joinChat(io, socket));
-  socket.on("leaveChat", basicHandlers.leaveChat(io, socket));
 
   //chat section
 
@@ -53,12 +47,16 @@ module.exports = (io, socket) => {
 
   socket.on("makeAdmin", groupHandlers.makeAdmin(io, socket));
 
+  socket.on("leaveChat", groupHandlers.leaveChat(io, socket));
+
   socket.on(
     "removeMemberFromChat",
     groupHandlers.removeMemberFromChat(io, socket)
   );
 
   //Community section
+
+  socket.on("joinChat", communityHandlers.joinChat(io, socket));
 
   socket.on(
     "getCommunityMessagesAndFeeds",
