@@ -3,6 +3,7 @@ const messageHandlers = require("./messageHandlers");
 const groupHandlers = require("./groupHandlers");
 const communityHandlers = require("./communityHandlers");
 const messageStatusHandlers = require("./messageStatusHandlers");
+const personalHandlers = require("./personalHandler");
 
 module.exports = (io, socket) => {
   console.log(`User connected: ${socket.user.id}`);
@@ -62,6 +63,10 @@ module.exports = (io, socket) => {
     "getCommunityMessagesAndFeeds",
     communityHandlers.getCommunityMessagesAndFeeds(io, socket)
   );
+
+  //personal section
+
+  socket.on("directMessage", personalHandlers.directMessage(io, socket));
 
   //disconnecting
   socket.on("disconnect", () => {
