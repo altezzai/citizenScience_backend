@@ -13,6 +13,16 @@ const DeletedChats = require("../models/deletedchats");
 
 exports.sendMessage = (io, socket) => async (data) => {
   const { chatId, content, mediaUrl, replyToId, sentAt } = data;
+  if (
+    (!content || content.trim() === "") &&
+    (!mediaUrl || mediaUrl.trim() === "") &&
+    (!startDate || startDate.trim() === "") &&
+    (!endDate || endDate.trim() === "")
+  ) {
+    return res.status(400).json({
+      error: "At least one of 'content' or 'mediaUrl' is required.",
+    });
+  }
   const transaction = await skrollsSequelize.transaction();
 
   try {

@@ -10,6 +10,7 @@ const registerAsAuthor = async (req, res) => {
 
   try {
     const user = await User.findByPk(userId);
+
     // if (user.isBanned) {
     //   return res.status(403).json({ error: "User account is banned" });
     // }

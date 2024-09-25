@@ -4,6 +4,18 @@ const User = require("../../models/user");
 
 const addExperience = async (req, res) => {
   const { workspace, position, startDate, endDate } = req.body;
+  if (
+    !workspace ||
+    !position ||
+    !startDate ||
+    workspace.trim() === "" ||
+    position.trim() === "" ||
+    startDate.trim() === ""
+  ) {
+    return res.status(400).json({
+      error: "'workspace', 'position', and 'startDate' are required fields.",
+    });
+  }
 
   try {
     const userId = req.user.id;
@@ -15,12 +27,14 @@ const addExperience = async (req, res) => {
     // if (user.isBanned) {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
+    const validatedEndDate = endDate && endDate.trim() !== "" ? endDate : null;
+
     const newExperience = await Experience.create({
       userId,
       workspace,
       position,
       startDate,
-      endDate,
+      endDate: validatedEndDate,
     });
     res.status(200).json(newExperience);
   } catch (error) {
@@ -60,6 +74,17 @@ const getExperiences = async (req, res) => {
 const updateExperience = async (req, res) => {
   const { id } = req.params;
   const { workspace, position, startDate, endDate } = req.body;
+  if (
+    (!workspace || workspace.trim() === "") &&
+    (!position || position.trim() === "") &&
+    (!startDate || startDate.trim() === "") &&
+    (!endDate || endDate.trim() === "")
+  ) {
+    return res.status(400).json({
+      error:
+        "At least one of 'workspace', 'position', 'startDate' or 'endDate' is required.",
+    });
+  }
 
   try {
     const userId = req.user.id;

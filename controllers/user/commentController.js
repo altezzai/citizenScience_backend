@@ -14,6 +14,13 @@ const Like = require("../../models/like");
 const addComment = async (req, res) => {
   const { feedId } = req.params;
   const { comment, mentionIds, parentId } = req.body;
+
+  if (!comment || comment.trim() === "") {
+    return res.status(400).json({
+      error: "Comment is required",
+    });
+  }
+
   const transaction = await skrollsSequelize.transaction();
   try {
     const userId = req.user.id;
@@ -320,6 +327,12 @@ const getReplies = async (req, res) => {
 const updateComment = async (req, res) => {
   const { commentId } = req.params;
   const { comment, mentionIds } = req.body;
+
+  if (!comment || comment.trim() === "") {
+    return res.status(400).json({
+      error: "Comment is required",
+    });
+  }
 
   const transaction = await skrollsSequelize.transaction();
 
