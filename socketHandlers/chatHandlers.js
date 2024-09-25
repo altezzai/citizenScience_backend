@@ -501,7 +501,7 @@ exports.getUserConversations =
                 THEN NULL
                 ELSE profile_image
             END`),
-            "profilePhoto",
+            "profile_image",
           ],
         ],
       });
@@ -539,6 +539,7 @@ exports.getUserConversations =
             const otherMember = conversation.ChatMembers.find(
               (member) => member.userId !== userId
             );
+
             return {
               chatId: conversation.id,
               type: conversation.type,
@@ -548,7 +549,7 @@ exports.getUserConversations =
                   : conversation.name,
               icon:
                 conversation.type == "personal"
-                  ? userMap[otherMember.userId]?.profilePhoto || null
+                  ? userMap[otherMember.userId]?.profile_image || null
                   : conversation.icon,
               lastMessage: lastMessage
                 ? {
