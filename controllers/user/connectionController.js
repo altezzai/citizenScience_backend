@@ -12,8 +12,8 @@ const follow = async (req, res) => {
   const { followingId } = req.body;
   const followerId = req.user.id;
 
-  if (!followerId || !followingId || followerId === followingId) {
-    return res.status(400).json({ error: "Invalid followerId or followingId" });
+  if (!followingId || followerId === followingId) {
+    return res.status(400).json({ error: "Invalid followingId" });
   }
 
   const transaction = await skrollsSequelize.transaction();

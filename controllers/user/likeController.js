@@ -11,9 +11,10 @@ const Notifications = require("../../models/notifications");
 
 const addLike = async (req, res) => {
   const { feedIds = [], commentIds = [] } = req.body;
+
   if (
-    (!feedIds || feedIds.filter((id) => id.trim() !== "").length === 0) &&
-    (!commentIds || commentIds.filter((id) => id.trim() !== "").length === 0)
+    (!feedIds || !Array.isArray(feedIds) || feedIds.length === 0) &&
+    (!commentIds || !Array.isArray(commentIds) || commentIds.length === 0)
   ) {
     return res.status(400).json({
       error: "At least one of 'feedIds'or 'commentIds' is required.",

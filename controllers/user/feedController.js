@@ -946,14 +946,13 @@ const deleteFeed = async (req, res) => {
 const updateCounts = async (req, res) => {
   const { viewList, shareList } = req.body;
   if (
-    (!viewList || viewList.filter((id) => id.trim() !== "").length === 0) &&
-    (!shareList || shareList.filter((id) => id.trim() !== "").length === 0)
+    (!viewList || !Array.isArray(viewList) || viewList.length === 0) &&
+    (!shareList || !Array.isArray(shareList) || shareList.length === 0)
   ) {
     return res.status(400).json({
       error: "At least one of 'viewList'or 'shareList' is required.",
     });
   }
-
   const transaction = await skrollsSequelize.transaction();
   try {
     const userId = req.user.id;
