@@ -46,6 +46,17 @@ const addFeed = async (req, res) => {
   }
 
   const validHashTags = parsedHashTags.filter((tag) => tag.trim() !== "");
+  if (
+    (!link || link.trim() === "") &&
+    (!description || description.trim() === "") &&
+    files.length === 0 &&
+    validHashTags.length === 0
+  ) {
+    return res.status(400).json({
+      error:
+        "At least one of 'link', 'description', 'hashtag', or 'files' is required.",
+    });
+  }
 
   const transaction = await skrollsSequelize.transaction();
 
@@ -639,9 +650,6 @@ const updateFeed = async (req, res) => {
     // if (user.isBanned) {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
-    const feedUpdateFields = {};
-    if (link !== undefined) feedUpdateFields.link = link;
-    if (description !== undefined) feedUpdateFields.description = description;
 
     const feedExist = await Feed.findByPk(id);
     if (!feedExist) {
@@ -655,6 +663,67 @@ const updateFeed = async (req, res) => {
         .status(403)
         .json({ error: "You are not authorized to update this feed" });
     }
+
+    //null check
+
+    const isFileNamePresent =
+      feedExist.fileName && feedExist.fileName.length > 0;
+
+    const currentLink = feedExist.link;
+    const currentDescription = feedExist.description;
+
+    const isLinkValid = link && link.trim() !== "";
+    const isDescriptionValid = description && description.trim() !== "";
+    const isMentionIdsValid =
+      Array.isArray(mentionIds) && mentionIds.length > 0;
+    const isHashTagsValid =
+      Array.isArray(hashTags) &&
+      hashTags.filter((tag) => tag.trim() !== "").length > 0;
+    const isCommunityIdsValid =
+      Array.isArray(communityIds) && communityIds.length > 0;
+
+    if (
+      !isFileNamePresent &&
+      !isLinkValid &&
+      !isDescriptionValid &&
+      !isMentionIdsValid &&
+      !isHashTagsValid &&
+      !isCommunityIdsValid
+    ) {
+      return res.status(400).json({
+        error:
+          "At least one of 'link', 'description', 'mentionIds', 'hashTags', or 'communityIds' must be provided when no file is attached.",
+      });
+    }
+
+    if (!isFileNamePresent) {
+      const noFieldsRemaining =
+        (!link || link.trim() === "") &&
+        (!currentLink || currentLink.trim() === "") &&
+        (!description || description.trim() === "") &&
+        (!currentDescription || currentDescription.trim() === "") &&
+        (!isMentionIdsValid || mentionIds.length === 0) &&
+        !(await FeedMentions.count({ where: { feedId: id } })) &&
+        (!isHashTagsValid ||
+          hashTags.filter((tag) => tag.trim() !== "").length === 0) &&
+        !(await PostHashtags.count({ where: { feedId: id } })) &&
+        (!isCommunityIdsValid ||
+          communityIds.filter((id) => id.trim() !== "").length === 0) &&
+        !(await CommunityFeeds.count({ where: { feedId: id } }));
+
+      if (noFieldsRemaining) {
+        return res.status(400).json({
+          error:
+            "You cannot remove all fields. At least one field must have a value.",
+        });
+      }
+    }
+
+    //null check
+
+    const feedUpdateFields = {};
+    if (link !== undefined) feedUpdateFields.link = link;
+    if (description !== undefined) feedUpdateFields.description = description;
 
     if (Object.keys(feedUpdateFields).length > 0) {
       const [updated] = await Feed.update(feedUpdateFields, {
@@ -769,63 +838,65 @@ const updateFeed = async (req, res) => {
     if (hashTags && Array.isArray(hashTags)) {
       const validHashTags = hashTags.filter((tag) => tag.trim() !== "");
 
-      const currentHashtags = await PostHashtags.findAll({
-        where: { feedId: id },
-        include: { model: Hashtags, attributes: ["id", "hashtag"] },
-        transaction,
-      });
-
-      const currentHashtagMap = currentHashtags.reduce((acc, ph) => {
-        if (ph.Hashtags && ph.Hashtags.hashtag) {
-          acc[ph.Hashtags.hashtag] = ph.Hashtags.id;
-        }
-        return acc;
-      }, {});
-
-      const newHashtags = validHashTags.filter(
-        (tag) => !currentHashtagMap[tag]
-      );
-      const removedHashtags = currentHashtags.filter(
-        (ph) => !validHashTags.includes(ph.Hashtags && ph.Hashtags.hashtag)
-      );
-
-      // Remove hashtags
-      await Promise.all(
-        removedHashtags.map(async (ph) => {
-          const hashtag = await Hashtags.findByPk(ph.hashtagId, {
-            transaction,
-          });
-          if (hashtag) {
-            await hashtag.decrement("usageCount", { by: 1, transaction });
-          } else {
-            console.error(`Hashtag with ID ${ph.hashtagId} not found.`);
-          }
-
-          await PostHashtags.destroy({
-            where: { feedId: id, hashtagId: ph.hashtagId },
-            transaction,
-          });
-        })
-      );
-
-      // Add new hashtags
-      const newHashtagPromises = newHashtags.map(async (tag) => {
-        const [hashtag] = await Hashtags.findOrCreate({
-          where: { hashtag: tag },
-          defaults: { usageCount: 0 },
+      if (validHashTags.length > 0) {
+        const currentHashtags = await PostHashtags.findAll({
+          where: { feedId: id },
+          include: { model: Hashtags, attributes: ["id", "hashtag"] },
           transaction,
         });
-        await hashtag.increment("usageCount", { by: 1, transaction });
-        return hashtag.id;
-      });
 
-      const newHashtagIds = await Promise.all(newHashtagPromises);
+        const currentHashtagMap = currentHashtags.reduce((acc, ph) => {
+          if (ph.Hashtags && ph.Hashtags.hashtag) {
+            acc[ph.Hashtags.hashtag] = ph.Hashtags.id;
+          }
+          return acc;
+        }, {});
 
-      const postHashtags = newHashtagIds.map((hashtagId) => ({
-        feedId: id,
-        hashtagId,
-      }));
-      await PostHashtags.bulkCreate(postHashtags, { transaction });
+        const newHashtags = validHashTags.filter(
+          (tag) => !currentHashtagMap[tag]
+        );
+        const removedHashtags = currentHashtags.filter(
+          (ph) => !validHashTags.includes(ph.Hashtags && ph.Hashtags.hashtag)
+        );
+
+        // Remove hashtags
+        await Promise.all(
+          removedHashtags.map(async (ph) => {
+            const hashtag = await Hashtags.findByPk(ph.hashtagId, {
+              transaction,
+            });
+            if (hashtag) {
+              await hashtag.decrement("usageCount", { by: 1, transaction });
+            } else {
+              console.error(`Hashtag with ID ${ph.hashtagId} not found.`);
+            }
+
+            await PostHashtags.destroy({
+              where: { feedId: id, hashtagId: ph.hashtagId },
+              transaction,
+            });
+          })
+        );
+
+        // Add new hashtags
+        const newHashtagPromises = newHashtags.map(async (tag) => {
+          const [hashtag] = await Hashtags.findOrCreate({
+            where: { hashtag: tag },
+            defaults: { usageCount: 0 },
+            transaction,
+          });
+          await hashtag.increment("usageCount", { by: 1, transaction });
+          return hashtag.id;
+        });
+
+        const newHashtagIds = await Promise.all(newHashtagPromises);
+
+        const postHashtags = newHashtagIds.map((hashtagId) => ({
+          feedId: id,
+          hashtagId,
+        }));
+        await PostHashtags.bulkCreate(postHashtags, { transaction });
+      }
     }
 
     await transaction.commit();
@@ -874,6 +945,14 @@ const deleteFeed = async (req, res) => {
 
 const updateCounts = async (req, res) => {
   const { viewList, shareList } = req.body;
+  if (
+    (!viewList || viewList.filter((id) => id.trim() !== "").length === 0) &&
+    (!shareList || shareList.filter((id) => id.trim() !== "").length === 0)
+  ) {
+    return res.status(400).json({
+      error: "At least one of 'viewList'or 'shareList' is required.",
+    });
+  }
 
   const transaction = await skrollsSequelize.transaction();
   try {
