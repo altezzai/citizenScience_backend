@@ -5,6 +5,19 @@ const User = require("../../models/user");
 const addEducation = async (req, res) => {
   const { institution, course, startYear, endYear } = req.body;
 
+  if (
+    !institution ||
+    !course ||
+    !startYear ||
+    institution.trim() === "" ||
+    course.trim() === "" ||
+    startYear.trim() === ""
+  ) {
+    return res.status(400).json({
+      error: "'institution', 'course', and 'startYear' are required fields.",
+    });
+  }
+
   try {
     const userId = req.user.id;
     // const user = await User.findOne({
@@ -60,6 +73,17 @@ const getEducations = async (req, res) => {
 const updateEducation = async (req, res) => {
   const { id } = req.params;
   const { institution, course, startYear, endYear } = req.body;
+  if (
+    (!institution || institution.trim() === "") &&
+    (!course || course.trim() === "") &&
+    (!startYear || startYear.trim() === "") &&
+    (!endYear || endYear.trim() === "")
+  ) {
+    return res.status(400).json({
+      error:
+        "At least one of 'institution', 'course', 'startYear' or 'endYear' is required.",
+    });
+  }
 
   try {
     const userId = req.user.id;

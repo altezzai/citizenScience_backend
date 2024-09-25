@@ -160,6 +160,17 @@ exports.createChat =
 exports.updateChat =
   (io, socket) =>
   async ({ chatId, name, icon, description, hashtags }) => {
+    if (
+      (!name || name.trim() === "") &&
+      (!icon || icon.trim() === "") &&
+      (!description || description.trim() === "") &&
+      (!hashtags || hashtags.trim() === "")
+    ) {
+      return res.status(400).json({
+        error:
+          "At least one of 'name', 'icon', 'description' or 'hashtags' is required.",
+      });
+    }
     const skrollsTransaction = await skrollsSequelize.transaction();
     const repositoryTransaction = await repositorySequelize.transaction();
     const userId = socket.user.id;

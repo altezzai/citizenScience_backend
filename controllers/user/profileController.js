@@ -74,6 +74,13 @@ const profileDetails = async (req, res) => {
 const addOtherIds = async (req, res) => {
   const { name, link } = req.body;
 
+  if (!name || name.trim() === "" || !link || link.trim() === "") {
+    return res.status(400).json({
+      error: "'name' and 'link' are both required.",
+    });
+  }
+
+
   try {
     const userId = req.user.id;
     // const user = await User.findOne({
@@ -127,6 +134,11 @@ const getOtherIds = async (req, res) => {
 const updateOtherIds = async (req, res) => {
   const { id } = req.params;
   const { name, link } = req.body;
+  if ((!name || name.trim() === "") && (!link || link.trim() === "")) {
+    return res.status(400).json({
+      error: "At least one of 'name' or 'link' is required.",
+    });
+  }
 
   try {
     const userId = req.user.id;
