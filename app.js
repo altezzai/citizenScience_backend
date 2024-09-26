@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const socketHandler = require("./socketHandlers/socket");
 const auth = require("./middleware/authMiddleware");
 const socketAuth = require("./middleware/socketAuthMiddleware");
@@ -27,6 +28,7 @@ app.use(auth);
 app.use("/uploads", express.static("uploads"));
 
 app.use("/users", userRoutes);
+app.use("/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 const syncDatabase = async () => {

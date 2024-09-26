@@ -65,6 +65,12 @@ const addFeed = async (req, res) => {
     });
   }
 
+  if (editPermission && (!description || description.trim() === "")) {
+    return res.status(400).json({
+      error: "Edit permission can only be true when a description is provided.",
+    });
+  }
+
   const transaction = await skrollsSequelize.transaction();
 
   try {
@@ -682,16 +688,11 @@ const updateFeed = async (req, res) => {
     const isFileNamePresent =
       feedExist.fileName && feedExist.fileName.length > 0;
 
-    const currentLink = feedExist.link;
-    const currentDescription = feedExist.description;
-
-    const isLinkValid = link && link.trim() !== "";
-    const isDescriptionValid = description && description.trim() !== "";
+    const isLinkValid = link !== undefined;
+    const isDescriptionValid = description !== undefined;
     const isMentionIdsValid =
       Array.isArray(mentionIds) && mentionIds.length > 0;
-    const isHashTagsValid =
-      Array.isArray(hashTags) &&
-      hashTags.filter((tag) => tag.trim() !== "").length > 0;
+    const isHashTagsValid = Array.isArray(hashTags) && hashTags.length > 0;
     const isCommunityIdsValid =
       Array.isArray(communityIds) && communityIds.length > 0;
 
@@ -706,23 +707,19 @@ const updateFeed = async (req, res) => {
     ) {
       return res.status(400).json({
         error:
-          "At least one of 'link', 'description', 'mentionIds', 'hashTags','flag' or 'communityIds' must be provided when no file is attached.",
+          "At least one of 'link', 'description', 'mentionIds', 'hashTags', 'flag', or 'communityIds' must be provided when no file is attached.",
       });
     }
 
     if (!isFileNamePresent) {
       const noFieldsRemaining =
-        (!link || link.trim() === "") &&
-        (!currentLink || currentLink.trim() === "") &&
-        (!description || description.trim() === "") &&
-        (!currentDescription || currentDescription.trim() === "") &&
-        (!isMentionIdsValid || mentionIds.length === 0) &&
+        (link === undefined || link === "") &&
+        (description === undefined || description === "") &&
+        !isMentionIdsValid &&
         !(await FeedMentions.count({ where: { feedId: id } })) &&
-        (!isHashTagsValid ||
-          hashTags.filter((tag) => tag.trim() !== "").length === 0) &&
+        !isHashTagsValid &&
         !(await PostHashtags.count({ where: { feedId: id } })) &&
-        (!isCommunityIdsValid ||
-          communityIds.filter((id) => id.trim() !== "").length === 0) &&
+        !isCommunityIdsValid &&
         !(await CommunityFeeds.count({ where: { feedId: id } }));
 
       if (noFieldsRemaining) {
@@ -734,6 +731,34 @@ const updateFeed = async (req, res) => {
     }
 
     //null check
+
+    if (flag) {
+      if (
+        !feedExist.description &&
+        (description === null || description === "")
+      ) {
+        return res.status(400).json({
+          error:
+            "Edit permission can only be true when a description is provided.",
+        });
+      }
+
+      if (
+        feedExist.description &&
+        (description === null || description === "")
+      ) {
+        return res.status(400).json({
+          error:
+            "Edit permission can only be true when a description is provided.",
+        });
+      }
+      if (!feedExist.description) {
+        return res.status(400).json({
+          error:
+            "Edit permission can only be true when a description is provided.",
+        });
+      }
+    }
 
     const feedUpdateFields = {};
     if (link !== undefined) feedUpdateFields.link = link;
@@ -756,8 +781,6 @@ const updateFeed = async (req, res) => {
         feedUpdateFields.showSimplified = flag;
       }
     }
-
-    console.log("feedupdateFields:", feedUpdateFields);
 
     if (Object.keys(feedUpdateFields).length > 0) {
       const [updated] = await Feed.update(feedUpdateFields, {
