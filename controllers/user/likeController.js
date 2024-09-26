@@ -37,6 +37,7 @@ const addLike = async (req, res) => {
         id: {
           [Op.in]: feedIds,
         },
+        feedActive: true,
       },
       transaction,
     });
@@ -46,6 +47,7 @@ const addLike = async (req, res) => {
         id: {
           [Op.in]: commentIds,
         },
+        commentActive: true,
       },
       transaction,
     });

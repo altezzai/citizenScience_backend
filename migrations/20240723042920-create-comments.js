@@ -37,6 +37,10 @@ module.exports = {
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
+      commentActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
       likeCount: {
         type: Sequelize.INTEGER,
         allowNull: false,

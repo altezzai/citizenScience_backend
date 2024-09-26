@@ -22,7 +22,13 @@ const saveFeed = async (req, res) => {
     // if (user.isBanned) {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
-    const feed = await Feed.findByPk(feedId, { transaction });
+    const feed = await Feed.findOne({
+      where: {
+        id: feedId,
+        feedActive: true,
+      },
+      transaction,
+    });
     if (!feed) {
       throw new Error("Feed not found");
     }
@@ -68,6 +74,16 @@ const getSavedFeeds = async (req, res) => {
       include: [
         {
           model: Feed,
+          where: Sequelize.and(
+            { feedActive: true },
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM repository.Users AS users
+              WHERE users.id = Feed.userId
+              AND users.isActive = true
+              AND users.citizenActive = true
+            ) > 0`)
+          ),
           attributes: {
             include: [
               [
@@ -92,13 +108,6 @@ const getSavedFeeds = async (req, res) => {
               ],
             ],
           },
-          where: Sequelize.literal(`(
-            SELECT COUNT(*)
-            FROM repository.Users AS users
-            WHERE users.id = Feed.userId
-            AND users.isActive = true
-            AND users.citizenActive = true
-          ) > 0`),
         },
       ],
     });

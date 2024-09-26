@@ -20,7 +20,14 @@ const FeedViews = require("../../models/feedviews");
 const User = require("../../models/user");
 
 const addFeed = async (req, res) => {
-  const { link, description, mentionIds, hashTags, communityIds } = req.body;
+  const {
+    link,
+    description,
+    mentionIds,
+    hashTags,
+    communityIds,
+    editPermission,
+  } = req.body;
   const files = req.files || [];
 
   let parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : [];
@@ -77,6 +84,7 @@ const addFeed = async (req, res) => {
         link,
         description,
         userId,
+        editPermission,
       },
       { transaction }
     );
@@ -181,6 +189,7 @@ const getFeeds = async (req, res) => {
       limit,
       where: {
         userId: feedUserIds,
+        feedActive: true,
         [Sequelize.Op.and]: [
           Sequelize.literal(`(
             SELECT isActive 
@@ -309,7 +318,9 @@ const getFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    const feed = await Feed.findByPk(feedId, {
+    const feed = await Feed.findOne({
+      where: { id: feedId, feedActive: true },
+
       attributes: {
         include: [
           [
@@ -408,7 +419,7 @@ const getFeed = async (req, res) => {
     const comments = await Comments.findAll({
       offset,
       limit,
-      where: { feedId, parentId: null },
+      where: { feedId, parentId: null, commentActive: true },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -526,6 +537,7 @@ const getUserFeeds = async (req, res) => {
       limit,
       where: {
         userId: userId,
+        feedActive: true,
       },
       order: [["createdAt", "DESC"]],
       attributes: {
@@ -636,7 +648,8 @@ const getUserFeeds = async (req, res) => {
 
 const updateFeed = async (req, res) => {
   const { id } = req.params;
-  const { link, description, mentionIds, hashTags, communityIds } = req.body;
+  const { link, description, mentionIds, hashTags, communityIds, flag } =
+    req.body;
 
   const transaction = await skrollsSequelize.transaction();
 
@@ -651,7 +664,7 @@ const updateFeed = async (req, res) => {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
 
-    const feedExist = await Feed.findByPk(id);
+    const feedExist = await Feed.findOne({ where: { id, feedActive: true } });
     if (!feedExist) {
       // throw new Error("Feed not found");
       return res.status(404).json({ error: "Feed not found" });
@@ -688,11 +701,12 @@ const updateFeed = async (req, res) => {
       !isDescriptionValid &&
       !isMentionIdsValid &&
       !isHashTagsValid &&
-      !isCommunityIdsValid
+      !isCommunityIdsValid &&
+      typeof flag !== "boolean"
     ) {
       return res.status(400).json({
         error:
-          "At least one of 'link', 'description', 'mentionIds', 'hashTags', or 'communityIds' must be provided when no file is attached.",
+          "At least one of 'link', 'description', 'mentionIds', 'hashTags','flag' or 'communityIds' must be provided when no file is attached.",
       });
     }
 
@@ -723,7 +737,27 @@ const updateFeed = async (req, res) => {
 
     const feedUpdateFields = {};
     if (link !== undefined) feedUpdateFields.link = link;
-    if (description !== undefined) feedUpdateFields.description = description;
+    if (description !== undefined) {
+      feedUpdateFields.description = description;
+      if (feedExist.isAdminEdited) {
+        feedUpdateFields.isAdminEdited = false;
+      }
+    }
+    if (flag) {
+      if (!feedExist.editPermission) {
+        feedUpdateFields.editPermission = flag;
+      } else {
+        if (!feedExist.showSimplified) {
+          feedUpdateFields.showSimplified = flag;
+        }
+      }
+    } else {
+      if (feedExist.showSimplified) {
+        feedUpdateFields.showSimplified = flag;
+      }
+    }
+
+    console.log("feedupdateFields:", feedUpdateFields);
 
     if (Object.keys(feedUpdateFields).length > 0) {
       const [updated] = await Feed.update(feedUpdateFields, {
@@ -964,6 +998,7 @@ const updateCounts = async (req, res) => {
         id: {
           [Op.in]: allFeedIds,
         },
+        feedActive: true,
       },
       attributes: ["id"],
       transaction,

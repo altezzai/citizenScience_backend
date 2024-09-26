@@ -28,9 +28,28 @@ module.exports = {
       description: {
         type: Sequelize.TEXT,
       },
+      simplified_description: {
+        type: Sequelize.TEXT,
+      },
       userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
+      },
+      editPermission: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      isAdminEdited: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      showSimplified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      feedActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
       likeCount: {
         type: Sequelize.INTEGER,

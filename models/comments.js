@@ -50,6 +50,10 @@ const Comments = skrollsSequelize.define(
         key: "id",
       },
     },
+    commentActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     likeCount: {
       type: DataTypes.INTEGER,
       allowNull: true,
