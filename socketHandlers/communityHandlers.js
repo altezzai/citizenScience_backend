@@ -229,6 +229,8 @@ exports.getCommunityMessagesAndFeeds =
             model: Feed,
             attributes: ["id", "fileName", "description", "createdAt"],
             where: {
+              feedActive: true,
+
               [Sequelize.Op.and]: [
                 Sequelize.literal(`(
                   SELECT isActive
@@ -265,6 +267,8 @@ exports.getCommunityMessagesAndFeeds =
       const memberFeeds = await Feed.findAll({
         where: {
           userId: memberIds,
+          feedActive: true,
+
           [Sequelize.Op.and]: [
             Sequelize.literal(`(
               SELECT isActive

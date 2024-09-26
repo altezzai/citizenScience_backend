@@ -34,7 +34,13 @@ const addComment = async (req, res) => {
     // }
     const parsedMentionIds = Array.isArray(mentionIds) ? mentionIds : null;
 
-    const feed = await Feed.findByPk(feedId, { transaction });
+    const feed = await Feed.findOne({
+      where: {
+        id: feedId,
+        feedActive: true,
+      },
+      transaction,
+    });
     if (!feed) {
       throw new Error("Feed not found");
     }
@@ -54,7 +60,13 @@ const addComment = async (req, res) => {
     await feed.save({ transaction });
 
     if (parentId) {
-      const parentComment = await Comments.findByPk(parentId, { transaction });
+      const parentComment = await Comments.findOne({
+        where: {
+          id: parentId,
+          commentActive: true,
+        },
+        transaction,
+      });
       if (parentComment) {
         await addNotification(
           parentComment.userId,
@@ -119,7 +131,7 @@ const getComments = async (req, res) => {
     const comments = await Comments.findAll({
       offset,
       limit,
-      where: { feedId, parentId: null },
+      where: { feedId, parentId: null, commentActive: true },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -231,7 +243,7 @@ const getReplies = async (req, res) => {
     const replies = await Comments.findAll({
       offset,
       limit,
-      where: { feedId, parentId: commentId },
+      where: { feedId, parentId: commentId, commentActive: true },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -347,7 +359,13 @@ const updateComment = async (req, res) => {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
 
-    const commentInstance = await Comments.findByPk(commentId, { transaction });
+    const commentInstance = await Comments.findOne({
+      where: {
+        id: commentId,
+        commentActive: true,
+      },
+      transaction,
+    });
     if (!commentInstance) {
       return res.status(404).json({ error: "Comment not found" });
     }
@@ -450,7 +468,12 @@ const deleteComment = async (req, res) => {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
 
-    const commentInstance = await Comments.findByPk(commentId);
+    const commentInstance = await Comments.findOne({
+      where: {
+        id: commentId,
+        commentActive: true,
+      },
+    });
     if (!commentInstance) {
       return res.status(404).json({ error: "Comment not found" });
     }

@@ -36,6 +36,9 @@ const Feed = skrollsSequelize.define(
     description: {
       type: DataTypes.TEXT,
     },
+    simplified_description: {
+      type: DataTypes.TEXT,
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -48,6 +51,22 @@ const Feed = skrollsSequelize.define(
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
+    },
+    editPermission: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    isAdminEdited: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    showSimplified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    feedActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
     },
     likeCount: {
       type: DataTypes.INTEGER,
