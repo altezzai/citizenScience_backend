@@ -66,7 +66,7 @@ const getSavedFeeds = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const savedfeeds = await SavedFeeds.findAll({
+    const { count, rows: savedfeeds } = await SavedFeeds.findAndCountAll({
       offset,
       limit,
       where: { userId },
@@ -112,11 +112,18 @@ const getSavedFeeds = async (req, res) => {
       ],
     });
 
-    if (savedfeeds.length === 0) {
+    if (count === 0) {
       return res.status(404).json({ message: "No saved feeds found" });
     }
 
-    res.status(200).json({ feeds: savedfeeds });
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalsavedFeeds: count,
+      totalPages,
+      currentPage: page,
+      feeds: savedfeeds,
+    });
   } catch (error) {
     console.error("Error retrieving Saved Feeds", error);
     res.status(500).json({ error: "Internal server error" });

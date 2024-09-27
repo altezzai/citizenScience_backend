@@ -128,7 +128,7 @@ const getComments = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const comments = await Comments.findAll({
+    const { count, rows: comments } = await Comments.findAndCountAll({
       offset,
       limit,
       where: { feedId, parentId: null, commentActive: true },
@@ -224,7 +224,14 @@ const getComments = async (req, res) => {
       };
     });
 
-    res.status(200).json(processedComments);
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalComments: count,
+      totalPages,
+      currentPage: page,
+      comments: processedComments,
+    });
   } catch (error) {
     console.error("Error retrieving comments:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -240,7 +247,7 @@ const getReplies = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const replies = await Comments.findAll({
+    const { count, rows: replies } = await Comments.findAndCountAll({
       offset,
       limit,
       where: { feedId, parentId: commentId, commentActive: true },
@@ -329,7 +336,14 @@ const getReplies = async (req, res) => {
       };
     });
 
-    res.status(200).json(processedReplies);
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalReplies: count,
+      totalPages,
+      currentPage: page,
+      replies: processedReplies,
+    });
   } catch (error) {
     console.error("Error retrieving replies:", error);
     res.status(500).json({ error: "Internal server error" });
