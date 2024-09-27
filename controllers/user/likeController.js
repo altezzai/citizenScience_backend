@@ -176,7 +176,7 @@ const getFeedLikes = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const feedLikes = await Like.findAll({
+    const { count, rows: feedLikes } = await Like.findAndCountAll({
       offset,
       limit,
       where: {
@@ -272,7 +272,14 @@ const getFeedLikes = async (req, res) => {
       ],
     });
 
-    res.status(200).json(feedLikes);
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalFeedLikes: count,
+      totalPages,
+      currentPage: page,
+      likes: feedLikes,
+    });
   } catch (error) {
     console.error("Error retrieving likes", error);
     res.status(500).json({ error: "Internal server error" });
@@ -287,7 +294,7 @@ const getCommentLikes = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const feedLikes = await Like.findAll({
+    const { count, rows: commentLikes } = await Like.findAll({
       offset,
       limit,
       where: {
@@ -381,8 +388,14 @@ const getCommentLikes = async (req, res) => {
         ],
       ],
     });
+    const totalPages = Math.ceil(count / limit);
 
-    res.status(200).json(feedLikes);
+    res.status(200).json({
+      totalCommentLikes: count,
+      totalPages,
+      currentPage: page,
+      likes: commentLikes,
+    });
   } catch (error) {
     console.error("Error retrieving likes", error);
     res.status(500).json({ error: "Internal server error" });

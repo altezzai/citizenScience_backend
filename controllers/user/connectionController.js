@@ -79,7 +79,7 @@ const followers = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const followersList = await Followers.findAll({
+    const { count, rows: followersList } = await Followers.findAndCountAll({
       offset,
       limit,
       where: { followingId },
@@ -180,7 +180,14 @@ const followers = async (req, res) => {
 
     // const followerList = followers.map(follow => follow.FollowerDetails);
 
-    res.status(200).json(followersList);
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalFollowers: count,
+      totalPages,
+      currentPage: page,
+      followers: followersList,
+    });
   } catch (error) {
     console.error("Error retreiving followers", error);
     res.status(500).json({ error: "Internal server error" });
@@ -200,7 +207,7 @@ const followings = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const followingsList = await Followers.findAll({
+    const { count, rows: followingsList } = await Followers.findAndCountAll({
       offset,
       limit,
       where: { followerId },
@@ -299,7 +306,14 @@ const followings = async (req, res) => {
       ],
     });
 
-    res.status(200).json(followingsList);
+    const totalPages = Math.ceil(count / limit);
+
+    res.status(200).json({
+      totalFollowings: count,
+      totalPages,
+      currentPage: page,
+      followings: followingsList,
+    });
   } catch (error) {
     console.error("Error retrieving followings", error);
     res.status(500).json({ error: "Internal server error" });

@@ -1,6 +1,7 @@
 const express = require("express");
 
 const feedController = require("../controllers/user/feedController");
+const feedFetchingController = require("../controllers/user/feedFetchingController");
 const commentController = require("../controllers/user/commentController");
 const likeController = require("../controllers/user/likeController");
 const savedFeedsController = require("../controllers/user/savedFeedsController");
@@ -23,12 +24,13 @@ const router = express.Router();
 router.use(auth);
 
 router.post("/feeds", upload.array("files", 10), feedController.addFeed);
-router.get("/feeds", feedController.getFeeds);
-router.get("/feeds/:feedId", feedController.getFeed);
-router.get("/profile/feeds", feedController.getUserFeeds);
 router.put("/feeds/:id", feedController.updateFeed);
 router.delete("/feeds/:id", feedController.deleteFeed);
 router.post("/feeds/updateCounts", feedController.updateCounts);
+
+router.get("/feeds", feedFetchingController.getFeeds);
+router.get("/feeds/:feedId", feedFetchingController.getFeed);
+router.get("/profile/feeds", feedFetchingController.getUserFeeds);
 
 router.post("/feeds/likes", likeController.addLike);
 router.get("/feeds/:feedId/likes", likeController.getFeedLikes);
