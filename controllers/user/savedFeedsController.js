@@ -67,6 +67,7 @@ const getSavedFeeds = async (req, res) => {
     const userId = req.user.id;
 
     const { count, rows: savedfeeds } = await SavedFeeds.findAndCountAll({
+      distinct: true,
       offset,
       limit,
       where: { userId },

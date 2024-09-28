@@ -32,6 +32,8 @@ const getFeeds = async (req, res) => {
       ...followers.map((follower) => follower.followingId),
     ];
     const { count, rows: feeds } = await Feed.findAndCountAll({
+      distinct: true,
+
       offset,
       limit,
       where: {
@@ -272,6 +274,7 @@ const getFeed = async (req, res) => {
     }
 
     const { count, rows: comments } = await Comments.findAndCountAll({
+      distinct: true,
       offset,
       limit,
       where: { feedId, parentId: null, commentActive: true },
@@ -363,7 +366,7 @@ const getFeed = async (req, res) => {
     const totalPages = Math.ceil(count / limit);
 
     res.status(200).json({
-      totalFeeds: count,
+      totalComments: count,
       totalPages,
       currentPage: page,
       feeds: feedWithLikeStatus,
@@ -395,6 +398,8 @@ const getUserFeeds = async (req, res) => {
       return res.status(403).json({ error: "User is not active" });
     }
     const { count, rows: feeds } = await Feed.findAndCountAll({
+      distinct: true,
+
       offset,
       limit,
       where: {
