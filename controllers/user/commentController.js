@@ -129,6 +129,7 @@ const getComments = async (req, res) => {
     const userId = req.user.id;
 
     const { count, rows: comments } = await Comments.findAndCountAll({
+      distinct: true,
       offset,
       limit,
       where: { feedId, parentId: null, commentActive: true },
@@ -248,6 +249,7 @@ const getReplies = async (req, res) => {
     const userId = req.user.id;
 
     const { count, rows: replies } = await Comments.findAndCountAll({
+      distinct: true,
       offset,
       limit,
       where: { feedId, parentId: commentId, commentActive: true },
