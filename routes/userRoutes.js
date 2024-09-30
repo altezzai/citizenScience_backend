@@ -16,6 +16,8 @@ const experienceController = require("../controllers/user/experienceController")
 const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
 const accountSettingsController = require("../controllers/user/accountSettingsController");
+const reportController = require("../controllers/user/reportController");
+
 const upload = require("../config/uploadConfig");
 const auth = require("../middleware/authMiddleware");
 
@@ -167,5 +169,9 @@ router.put(
 
   accountSettingsController.deleteAccount
 );
+
+//reportController section
+
+router.post("/report", reportController.addReport);
 
 module.exports = router;

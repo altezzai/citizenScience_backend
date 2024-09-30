@@ -20,6 +20,8 @@ const Experience = require("./experience");
 const Educations = require("./educations");
 const OtherIds = require("./otherids");
 const FeedViews = require("./feedviews");
+const Reports = require("./reports");
+const Actions = require("./actions");
 
 const User = repositorySequelize.define(
   "User",
@@ -211,5 +213,17 @@ OtherIds.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(FeedViews, { foreignKey: "userId" });
 FeedViews.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(Reports, { foreignKey: "reporter_id" });
+Reports.belongsTo(User, { foreignKey: "reporter_id", as: "reporterUser" });
+
+User.hasMany(Reports, { foreignKey: "userId" });
+Reports.belongsTo(User, { foreignKey: "userId", as: "reportedUser" });
+
+User.hasMany(Actions, { foreignKey: "userId" });
+Actions.belongsTo(User, { foreignKey: "userId", as: "reportedUser" });
+
+User.hasMany(Actions, { foreignKey: "reviewedBy" });
+Actions.belongsTo(User, { foreignKey: "reviewedBy", as: "reviewer" });
 
 module.exports = User;
