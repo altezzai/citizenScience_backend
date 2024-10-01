@@ -17,11 +17,7 @@ const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
 const accountSettingsController = require("../controllers/user/accountSettingsController");
 const upload = require("../config/uploadConfig");
-const auth = require("../middleware/authMiddleware");
-
 const router = express.Router();
-
-router.use(auth);
 
 router.post("/feeds", upload.array("files", 10), feedController.addFeed);
 router.put("/feeds/:id", feedController.updateFeed);

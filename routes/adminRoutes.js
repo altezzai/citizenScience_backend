@@ -1,5 +1,4 @@
 const express = require("express");
-const auth = require("../middleware/authMiddleware");
 
 const feedEditingController = require("../controllers/admin/feedEditingController");
 const contentManagementController = require("../controllers/admin/contentManagementController");
