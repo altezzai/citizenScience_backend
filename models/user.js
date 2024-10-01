@@ -112,6 +112,10 @@ const User = repositorySequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    ban_duration: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     modelName: "User",

@@ -82,6 +82,11 @@ const Messages = skrollsSequelize.define(
       allowNull: false,
       type: DataTypes.DATE,
     },
+    messageActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
     createdAt: {
       allowNull: false,
       type: DataTypes.DATE,

@@ -57,7 +57,7 @@ const Actions = skrollsSequelize.define(
     },
     action_types: {
       type: DataTypes.ENUM,
-      values: ["warning", "content_removal", "account_suspension", "no_action"],
+      values: ["content_removal", "account_suspension", "no_action"],
       allowNull: false,
     },
     reviewedBy: {
@@ -72,6 +72,10 @@ const Actions = skrollsSequelize.define(
       },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
+    },
+    suspension_duration: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     resolvedAt: {
       type: DataTypes.DATE,

@@ -45,17 +45,16 @@ module.exports = {
       },
       action_types: {
         type: Sequelize.ENUM,
-        values: [
-          "warning",
-          "content_removal",
-          "account_suspension",
-          "no_action",
-        ],
+        values: ["content_removal", "account_suspension", "no_action"],
         allowNull: false,
       },
       reviewedBy: {
         type: Sequelize.INTEGER,
         allowNull: false,
+      },
+      suspension_duration: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
       },
       resolvedAt: {
         type: Sequelize.DATE,

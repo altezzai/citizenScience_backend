@@ -75,7 +75,7 @@ const Reports = skrollsSequelize.define(
     },
     status: {
       type: DataTypes.ENUM,
-      values: ["pending", "rejected", "resolved"],
+      values: ["pending", "resolved"],
       allowNull: false,
       defaultValue: "pending",
     },

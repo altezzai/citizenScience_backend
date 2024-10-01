@@ -19,11 +19,8 @@ const accountSettingsController = require("../controllers/user/accountSettingsCo
 const reportController = require("../controllers/user/reportController");
 
 const upload = require("../config/uploadConfig");
-const auth = require("../middleware/authMiddleware");
 
 const router = express.Router();
-
-router.use(auth);
 
 router.post("/feeds", upload.array("files", 10), feedController.addFeed);
 router.put("/feeds/:id", feedController.updateFeed);

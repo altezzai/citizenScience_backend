@@ -1,5 +1,4 @@
 const express = require("express");
-const auth = require("../middleware/authMiddleware");
 
 const feedEditingController = require("../controllers/admin/feedEditingController");
 const contentManagementController = require("../controllers/admin/contentManagementController");
@@ -15,5 +14,6 @@ router.get("/contents", contentManagementController.getContents);
 
 router.get("/getReports", contentModerationController.getReports);
 router.get("/viewReport", contentModerationController.viewReport);
+router.post("/addAction", contentModerationController.addAction);
 
 module.exports = router;
