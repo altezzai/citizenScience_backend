@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const dotenv = require("dotenv");
+
+dotenv.config();
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const socketHandler = require("./socketHandlers/socket");
@@ -11,6 +14,7 @@ const {
   repositorySequelize,
 } = require("./config/connection");
 
+console.log(process.env.JWT_SECRET);
 const app = express();
 const server = http.createServer(app);
 const io = require("socket.io")(server, {
