@@ -116,6 +116,7 @@ exports.getMessages =
       let whereClause = {
         chatId,
         deleteForEveryone: false,
+        messageActive: true,
       };
 
       if (deletedChat) {
@@ -167,6 +168,7 @@ exports.getMessages =
           {
             model: Messages,
             as: "replyTo",
+            where: { messageActive: true },
             attributes: {
               include: [
                 [

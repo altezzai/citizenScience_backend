@@ -5,6 +5,8 @@ const Chats = require("./chats");
 const MessageStatuses = require("./messagestatuses");
 const User = require("./user");
 const DeletedMessages = require("./deletedmessages");
+const Reports = require("./reports");
+const Actions = require("./actions");
 
 const Messages = skrollsSequelize.define(
   "Messages",
@@ -80,6 +82,11 @@ const Messages = skrollsSequelize.define(
       allowNull: false,
       type: DataTypes.DATE,
     },
+    messageActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
     createdAt: {
       allowNull: false,
       type: DataTypes.DATE,
@@ -106,5 +113,11 @@ MessageStatuses.belongsTo(Messages, { foreignKey: "messageId" });
 
 Messages.hasMany(DeletedMessages, { foreignKey: "messageId" });
 DeletedMessages.belongsTo(Messages, { foreignKey: "messageId" });
+
+Messages.hasMany(Reports, { foreignKey: "messageId" });
+Reports.belongsTo(Messages, { foreignKey: "messageId" });
+
+Messages.hasMany(Actions, { foreignKey: "messageId" });
+Actions.belongsTo(Messages, { foreignKey: "messageId" });
 
 module.exports = Messages;

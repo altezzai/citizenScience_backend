@@ -355,6 +355,7 @@ const searchConversations = async (req, res) => {
           ],
           where: {
             messageType: "regular",
+            messageActive: true,
             content: {
               [Op.like]: `%${searchString}%`,
             },
@@ -482,6 +483,7 @@ const searchConversations = async (req, res) => {
               attributes: [],
               where: {
                 chatId: conversation.chatId,
+                messageActive: true,
                 createdAt: {
                   [Op.gt]: conversation.lastMessage
                     ? conversation.lastMessage.createdAt

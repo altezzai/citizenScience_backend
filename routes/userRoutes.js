@@ -16,7 +16,10 @@ const experienceController = require("../controllers/user/experienceController")
 const educationController = require("../controllers/user/educationController");
 const profileSettingsController = require("../controllers/user/profileSettingsController");
 const accountSettingsController = require("../controllers/user/accountSettingsController");
+const reportController = require("../controllers/user/reportController");
+
 const upload = require("../config/uploadConfig");
+
 const router = express.Router();
 
 router.post("/feeds", upload.array("files", 10), feedController.addFeed);
@@ -163,5 +166,9 @@ router.put(
 
   accountSettingsController.deleteAccount
 );
+
+//reportController section
+
+router.post("/report", reportController.addReport);
 
 module.exports = router;

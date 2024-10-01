@@ -10,6 +10,8 @@ const Hashtags = require("./hashtags");
 const Notifications = require("./notifications");
 const CommunityFeeds = require("./communityfeeds");
 const FeedViews = require("./feedviews");
+const Reports = require("./reports");
+const Actions = require("./actions");
 
 const Feed = skrollsSequelize.define(
   "Feed",
@@ -131,5 +133,11 @@ CommunityFeeds.belongsTo(Feed, { foreignKey: "feedId" });
 
 Feed.hasMany(FeedViews, { foreignKey: "feedId" });
 FeedViews.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(Reports, { foreignKey: "feedId" });
+Reports.belongsTo(Feed, { foreignKey: "feedId" });
+
+Feed.hasMany(Actions, { foreignKey: "feedId" });
+Actions.belongsTo(Feed, { foreignKey: "feedId" });
 
 module.exports = Feed;

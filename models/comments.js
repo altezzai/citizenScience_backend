@@ -5,6 +5,8 @@ const { FOREIGNKEYS } = require("sequelize/lib/query-types");
 const FeedMentions = require("./feedmentions");
 const Notifications = require("./notifications");
 const Like = require("./like");
+const Reports = require("./reports");
+const Actions = require("./actions");
 
 const Comments = skrollsSequelize.define(
   "Comments",
@@ -78,7 +80,7 @@ Comments.hasMany(Like, { foreignKey: "commentId" });
 Like.belongsTo(Comments, { foreignKey: "commentId" });
 
 Comments.hasMany(Comments, { foreignKey: "parentId", as: "Replies" });
-Comments.belongsTo(Comments, { foreignKey: "parentId" });
+Comments.belongsTo(Comments, { foreignKey: "parentId", as: "ParentComment" });
 
 Comments.hasMany(Comments, { foreignKey: "parentId", as: "NestedReplies" });
 
@@ -89,5 +91,11 @@ FeedMentions.belongsTo(Comments, {
 
 Comments.hasMany(Notifications, { foreignKey: "commentId" });
 Notifications.belongsTo(Comments, { foreignKey: "commentId" });
+
+Comments.hasMany(Reports, { foreignKey: "commentId" });
+Reports.belongsTo(Comments, { foreignKey: "commentId" });
+
+Comments.hasMany(Actions, { foreignKey: "commentId" });
+Actions.belongsTo(Comments, { foreignKey: "commentId" });
 
 module.exports = Comments;

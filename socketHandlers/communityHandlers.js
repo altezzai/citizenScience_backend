@@ -119,6 +119,7 @@ exports.getCommunityMessagesAndFeeds =
       let whereClause = {
         chatId,
         deleteForEveryone: false,
+        messageActive: true,
       };
 
       if (deletedChat) {
@@ -170,6 +171,7 @@ exports.getCommunityMessagesAndFeeds =
           {
             model: Messages,
             as: "replyTo",
+            where: { messageActive: true },
             attributes: {
               include: [
                 [
@@ -299,7 +301,7 @@ exports.getCommunityMessagesAndFeeds =
         offset,
       });
 
-      const communityFeedIds = communityFeeds.map((feed) => feed.Feed.id); // Get the IDs of feeds in communityFeeds
+      const communityFeedIds = communityFeeds.map((feed) => feed.Feed.id);
 
       const uniqueMemberFeeds = memberFeeds.filter(
         (feed) => !communityFeedIds.includes(feed.id)
