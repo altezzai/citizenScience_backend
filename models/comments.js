@@ -80,7 +80,7 @@ Comments.hasMany(Like, { foreignKey: "commentId" });
 Like.belongsTo(Comments, { foreignKey: "commentId" });
 
 Comments.hasMany(Comments, { foreignKey: "parentId", as: "Replies" });
-Comments.belongsTo(Comments, { foreignKey: "parentId" });
+Comments.belongsTo(Comments, { foreignKey: "parentId", as: "ParentComment" });
 
 Comments.hasMany(Comments, { foreignKey: "parentId", as: "NestedReplies" });
 

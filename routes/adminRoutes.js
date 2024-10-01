@@ -13,8 +13,7 @@ router.get("/solvedFeeds", feedEditingController.getSolvedFeeds);
 
 router.get("/contents", contentManagementController.getContents);
 
-router.get("/pendingReports", contentModerationController.getPendingReports);
-router.get("/rejectedReports", contentModerationController.getRejectedReports);
-router.get("/resolvedReports", contentModerationController.getResolvedReports);
+router.get("/getReports", contentModerationController.getReports);
+router.get("/viewReport", contentModerationController.viewReport);
 
 module.exports = router;
