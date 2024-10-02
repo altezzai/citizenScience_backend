@@ -465,7 +465,7 @@ exports.getUserConversations =
           },
           type: type,
         },
-        order: [["updatedAt", "DESC"]],
+        order: [["createdAt", "DESC"]],
       });
 
       const deletedMessages = await DeletedMessages.findAll({
@@ -604,6 +604,16 @@ exports.getUserConversations =
           };
         })
       );
+
+      result.sort((a, b) => {
+        const dateA = a.lastMessage
+          ? new Date(a.lastMessage.createdAt)
+          : new Date(0);
+        const dateB = b.lastMessage
+          ? new Date(b.lastMessage.createdAt)
+          : new Date(0);
+        return dateB - dateA;
+      });
 
       if (type === "personal") {
         socket.emit("personalConversations", { conversations: result });
