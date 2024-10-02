@@ -26,6 +26,7 @@ const saveFeed = async (req, res) => {
       where: {
         id: feedId,
         feedActive: true,
+        isDeleted: false,
       },
       transaction,
     });
@@ -76,7 +77,7 @@ const getSavedFeeds = async (req, res) => {
         {
           model: Feed,
           where: Sequelize.and(
-            { feedActive: true },
+            { feedActive: true, isDeleted: false },
             Sequelize.literal(`(
               SELECT COUNT(*)
               FROM repository.Users AS users

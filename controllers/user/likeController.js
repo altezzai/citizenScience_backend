@@ -38,6 +38,7 @@ const addLike = async (req, res) => {
           [Op.in]: feedIds,
         },
         feedActive: true,
+        isDeleted: false,
       },
       transaction,
     });
@@ -48,6 +49,7 @@ const addLike = async (req, res) => {
           [Op.in]: commentIds,
         },
         commentActive: true,
+        isDeleted: false,
       },
       transaction,
     });

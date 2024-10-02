@@ -51,6 +51,14 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
       },
+      isDeleted: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      isArchive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
       likeCount: {
         type: Sequelize.INTEGER,
         allowNull: false,

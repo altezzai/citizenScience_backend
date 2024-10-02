@@ -186,7 +186,9 @@ const updateFeed = async (req, res) => {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
 
-    const feedExist = await Feed.findOne({ where: { id, feedActive: true } });
+    const feedExist = await Feed.findOne({
+      where: { id, feedActive: true, isDeleted: false },
+    });
     if (!feedExist) {
       // throw new Error("Feed not found");
       return res.status(404).json({ error: "Feed not found" });
@@ -496,7 +498,9 @@ const deleteFeed = async (req, res) => {
     // if (user.isBanned) {
     //   return res.status(403).json({ error: "User account is banned" });
     // }
-    const feedExist = await Feed.findByPk(id);
+    const feedExist = await Feed.findOne({
+      where: { id, feedActive: true, isDeleted: false },
+    });
     if (!feedExist) {
       return res.status(404).json({ error: "Feed not found" });
     }
@@ -506,7 +510,7 @@ const deleteFeed = async (req, res) => {
         .status(403)
         .json({ error: "You are not authorized to delete this feed" });
     }
-    const deleted = await Feed.destroy({ where: { id } });
+    const deleted = await Feed.update({ isDeleted: true }, { where: { id } });
     if (deleted) {
       res.status(200).json({ message: "Feed deleted successfully" });
     }
@@ -538,6 +542,7 @@ const updateCounts = async (req, res) => {
           [Op.in]: allFeedIds,
         },
         feedActive: true,
+        isDeleted: false,
       },
       attributes: ["id"],
       transaction,

@@ -38,6 +38,7 @@ const addComment = async (req, res) => {
       where: {
         id: feedId,
         feedActive: true,
+        isDeleted: false,
       },
       transaction,
     });
@@ -64,6 +65,7 @@ const addComment = async (req, res) => {
         where: {
           id: parentId,
           commentActive: true,
+          isDeleted: false,
         },
         transaction,
       });
@@ -132,7 +134,7 @@ const getComments = async (req, res) => {
       distinct: true,
       offset,
       limit,
-      where: { feedId, parentId: null, commentActive: true },
+      where: { feedId, parentId: null, commentActive: true, isDeleted: false },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -252,7 +254,12 @@ const getReplies = async (req, res) => {
       distinct: true,
       offset,
       limit,
-      where: { feedId, parentId: commentId, commentActive: true },
+      where: {
+        feedId,
+        parentId: commentId,
+        commentActive: true,
+        isDeleted: false,
+      },
       order: [["createdAt", "DESC"]],
       attributes: {
         include: [
@@ -379,6 +386,7 @@ const updateComment = async (req, res) => {
       where: {
         id: commentId,
         commentActive: true,
+        isDeleted: false,
       },
       transaction,
     });
@@ -488,21 +496,34 @@ const deleteComment = async (req, res) => {
       where: {
         id: commentId,
         commentActive: true,
+        isDeleted: false,
       },
+      include: [
+        {
+          model: Feed,
+          attributes: ["userId"],
+        },
+      ],
     });
     if (!commentInstance) {
       return res.status(404).json({ error: "Comment not found" });
     }
 
-    if (commentInstance.userId !== userId) {
+    if (
+      commentInstance.userId !== userId &&
+      commentInstance.Feed.userId !== userId
+    ) {
       return res
         .status(403)
         .json({ error: "You are not authorized to delete this Comment" });
     }
-    const deletedComment = await Comments.destroy({ where: { id: commentId } });
+    const deletedComment = await Comments.update(
+      { isDeleted: true },
+      { where: { id: commentId } }
+    );
 
     if (!deletedComment) {
-      return res.status(404).json({ error: "Comment not found" });
+      return res.status(404).json({ error: "Comment not deleted" });
     }
     res.status(200).json({ message: "Deleted Comment successfully" });
   } catch (error) {
