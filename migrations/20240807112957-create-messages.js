@@ -37,7 +37,7 @@ module.exports = {
         type: Sequelize.TEXT,
       },
       messageType: {
-        type: Sequelize.ENUM("regular", "system"),
+        type: Sequelize.ENUM("regular", "system", "chatAction"),
         allowNull: false,
         defaultValue: "regular",
       },

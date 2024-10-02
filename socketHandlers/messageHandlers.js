@@ -234,19 +234,47 @@ exports.deleteMessage =
     try {
       const userId = socket.user.id;
 
+      const message = await Messages.findByPk(messageId);
+      if (!message) {
+        return socket.emit("error", { message: "Message not found" });
+      }
+
+      const isAdmin = await ChatMembers.findOne({
+        where: {
+          chatId: message.chatId,
+          userId,
+          isAdmin: true,
+        },
+      });
+
+      const isSender = userId === message.senderId;
+      const canDelete = isSender || isAdmin;
+
+      if (!canDelete) {
+        return socket.emit("error", {
+          message: "You don't have permission to delete this message",
+        });
+      }
+
       if (deleteForEveryone) {
+        const content = isSender ? "Deleted by user" : "Deleted by admin";
+
         await Messages.update(
-          { deleteForEveryone: true },
-          { where: { id: messageId, senderId: userId } } //senderId check for delete for everyone
+          { deleteForEveryone: true, content, messageType: "chatAction" },
+          { where: { id: messageId, senderId: userId } }
         );
-        socket.emit("message deleted for everyone", { messageId });
+
+        socket.emit("deleted", {
+          message: "message deleted for everyone",
+          messageId,
+        });
       } else {
         await DeletedMessages.create({
           userId,
           messageId,
           deletedAt: deletedAt ? new Date(deletedAt) : new Date(),
         });
-        socket.emit("message deleted", { messageId });
+        socket.emit("deleted", { message: "message deleted", messageId });
       }
     } catch (error) {
       socket.emit("error", { message: "Failed to delete message" });
