@@ -18,6 +18,7 @@ const getPendingFeeds = async (req, res) => {
         editPermission: true,
         isAdminEdited: false,
         feedActive: true,
+        isDeleted: false,
       },
       attributes: ["id", "description"],
     });
@@ -73,6 +74,7 @@ const getSolvedFeeds = async (req, res) => {
         editPermission: true,
         isAdminEdited: true,
         feedActive: true,
+        isDeleted: false,
       },
       attributes: ["id", "description", "simplified_description"],
     });
@@ -90,7 +92,6 @@ const getSolvedFeeds = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 module.exports = {
   getPendingFeeds,

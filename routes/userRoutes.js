@@ -59,6 +59,12 @@ router.delete(
 
 router.post("/savedFeeds", savedFeedsController.saveFeed);
 router.get("/savedFeeds", savedFeedsController.getSavedFeeds);
+router.post("/feeds/:feedId/archive", savedFeedsController.archiveFeed);
+router.get("/profile/archivedFeeds", savedFeedsController.getArchiveFeeds);
+router.post(
+  "/feeds/:feedId/removeArchive",
+  savedFeedsController.removeFromArchive
+);
 
 router.post("/follow", connectionController.follow);
 router.get("/followers", connectionController.followers);

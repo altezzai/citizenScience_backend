@@ -187,7 +187,7 @@ const updateFeed = async (req, res) => {
     // }
 
     const feedExist = await Feed.findOne({
-      where: { id, feedActive: true, isDeleted: false },
+      where: { id, feedActive: true, isDeleted: false, isArchive: false },
     });
     if (!feedExist) {
       // throw new Error("Feed not found");
@@ -543,6 +543,7 @@ const updateCounts = async (req, res) => {
         },
         feedActive: true,
         isDeleted: false,
+        isArchive: false,
       },
       attributes: ["id"],
       transaction,

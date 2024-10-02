@@ -605,7 +605,13 @@ exports.getUserConversations =
         })
       );
 
-      socket.emit("userConversations", { conversations: result });
+      if (type === "personal") {
+        socket.emit("personalConversations", { conversations: result });
+      } else if (type === "group") {
+        socket.emit("groupConversations", { conversations: result });
+      } else if (type === "community") {
+        socket.emit("communityConversations", { conversations: result });
+      }
     } catch (error) {
       console.error("Error fetching user conversations:", error);
       socket.emit("error", "Failed to fetch user conversations.");

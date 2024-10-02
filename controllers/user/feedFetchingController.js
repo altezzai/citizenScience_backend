@@ -40,6 +40,7 @@ const getFeeds = async (req, res) => {
         userId: feedUserIds,
         feedActive: true,
         isDeleted: false,
+        isArchive: false,
         [Sequelize.Op.and]: [
           Sequelize.literal(`(
               SELECT isActive 
@@ -177,7 +178,12 @@ const getFeed = async (req, res) => {
   try {
     const userId = req.user.id;
     const feed = await Feed.findOne({
-      where: { id: feedId, feedActive: true, isDeleted: false },
+      where: {
+        id: feedId,
+        feedActive: true,
+        isDeleted: false,
+        isArchive: false,
+      },
 
       attributes: {
         include: [
@@ -407,6 +413,7 @@ const getUserFeeds = async (req, res) => {
         userId: userId,
         feedActive: true,
         isDeleted: false,
+        isArchive: false,
       },
       order: [["createdAt", "DESC"]],
       attributes: {
