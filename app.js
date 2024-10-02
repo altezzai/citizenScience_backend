@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const helmet = require("helmet");
+const morgan = require("morgan");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -22,7 +24,9 @@ const io = require("socket.io")(server, {
   },
 });
 
+app.use(helmet());
 app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extend: true }));
 app.use(auth);
@@ -31,8 +35,13 @@ app.use("/uploads", express.static("uploads"));
 app.use("/users", userRoutes);
 app.use("/admin", verifyAdmin, adminRoutes);
 
+io.use(socketAuth);
+io.on("connection", (socket) => {
+  socketHandler(io, socket);
+});
+
 const PORT = process.env.PORT || 3000;
-const syncDatabase = async () => {
+const startServer = async () => {
   try {
     await skrollsSequelize.authenticate();
     console.log(
@@ -51,17 +60,19 @@ const syncDatabase = async () => {
     console.log("repository database synchronized.");
 
     server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error("Unable to connect to the databases:", error);
+    process.exit(1);
   }
 };
 
-io.use(socketAuth);
-
-io.on("connection", (socket) => {
-  socketHandler(io, socket);
+process.on("SIGINT", async () => {
+  console.log("SIGINT signal received: closing HTTP server");
+  await skrollsSequelize.close();
+  await repositorySequelize.close();
+  process.exit(0);
 });
 
-syncDatabase();
+startServer();
