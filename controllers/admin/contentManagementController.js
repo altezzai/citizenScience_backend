@@ -16,6 +16,7 @@ const getContents = async (req, res) => {
       offset,
       where: {
         feedActive: true,
+        isDeleted: false,
       },
       attributes: ["id", "description", "simplified_description", "fileName"],
     });

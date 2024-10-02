@@ -232,6 +232,7 @@ exports.getCommunityMessagesAndFeeds =
             attributes: ["id", "fileName", "description", "createdAt"],
             where: {
               feedActive: true,
+              isDeleted: false,
 
               [Sequelize.Op.and]: [
                 Sequelize.literal(`(
@@ -270,6 +271,8 @@ exports.getCommunityMessagesAndFeeds =
         where: {
           userId: memberIds,
           feedActive: true,
+          isDeleted: false,
+          isArchive: false,
 
           [Sequelize.Op.and]: [
             Sequelize.literal(`(

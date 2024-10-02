@@ -70,6 +70,14 @@ const Feed = skrollsSequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    isDeleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    isArchive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     likeCount: {
       type: DataTypes.INTEGER,
       allowNull: false,

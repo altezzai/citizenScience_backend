@@ -33,18 +33,22 @@ const getReports = async (req, res) => {
 
         [
           Sequelize.literal(`(
-              SELECT username 
-              FROM repository.Users 
-              WHERE repository.Users.id = Reports.userId
-            )`),
+            SELECT username
+            FROM repository.Users AS users
+            WHERE users.id = Reports.userId
+            AND users.isActive = true
+            AND users.citizenActive = true
+          )`),
           "username",
         ],
         [
           Sequelize.literal(`(
-              SELECT profile_image 
-              FROM repository.Users 
-              WHERE repository.Users.id = Reports.userId
-            )`),
+            SELECT profile_image
+            FROM repository.Users AS users
+            WHERE users.id = Reports.userId
+            AND users.isActive = true
+            AND users.citizenActive = true
+          )`),
           "profilePhoto",
         ],
       ],
@@ -56,16 +60,19 @@ const getReports = async (req, res) => {
       include: [
         {
           model: Feed,
+          where: { isDeleted: false },
           attributes: ["fileName", "description"],
           required: false,
         },
         {
           model: Comments,
+          where: { isDeleted: false },
           attributes: ["comment"],
           required: false,
         },
         {
           model: Messages,
+          where: { deleteForEveryone: false },
           attributes: ["mediaUrl", "content"],
           required: false,
         },
