@@ -168,7 +168,7 @@ const getUserNotifications = async (req, res) => {
       include: [
         {
           model: Feed,
-          where: { feedActive: true, isDeleted: false },
+          where: { feedActive: true, isDeleted: false, isArchive: false },
           attributes: ["fileName"],
         },
         {

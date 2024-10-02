@@ -272,6 +272,7 @@ exports.getCommunityMessagesAndFeeds =
           userId: memberIds,
           feedActive: true,
           isDeleted: false,
+          isArchive: false,
 
           [Sequelize.Op.and]: [
             Sequelize.literal(`(
