@@ -42,7 +42,7 @@
 
 const socketAuth = (socket, next) => {
   socket.user = {
-    id: 2,
+    id: 3,
   };
 
   next();
@@ -50,7 +50,7 @@ const socketAuth = (socket, next) => {
 
 const auth = (req, res, next) => {
   req.user = {
-    id: 3,
+    id: 2,
   };
 
   next();

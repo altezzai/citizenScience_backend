@@ -54,7 +54,7 @@ const Messages = skrollsSequelize.define(
       type: DataTypes.TEXT,
     },
     messageType: {
-      type: DataTypes.ENUM("regular", "system"),
+      type: DataTypes.ENUM("regular", "system", "chatAction"),
       allowNull: false,
       defaultValue: "regular",
     },
