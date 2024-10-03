@@ -42,7 +42,7 @@
 
 const socketAuth = (socket, next) => {
   socket.user = {
-    id: 3,
+    id: 2,
   };
 
   next();

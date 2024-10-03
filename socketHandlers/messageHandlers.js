@@ -123,7 +123,8 @@ exports.getMessages =
         whereClause.createdAt = { [Op.gt]: deletedChat.deletedAt };
       }
 
-      const messages = await Messages.findAll({
+      const { count, rows: messages } = await Messages.findAndCountAll({
+        distinct: true,
         where: whereClause,
         order: [["createdAt", "DESC"]],
         limit,
@@ -221,7 +222,14 @@ exports.getMessages =
         (message) => message !== null
       );
 
-      socket.emit("messages", { messages: validMessages });
+      const totalPages = Math.ceil(count.length / limit);
+
+      socket.emit("messages", {
+        totalConversations: count,
+        totalPages,
+        currentPage: page,
+        messages: validMessages,
+      });
     } catch (error) {
       console.error("Error fetching chat messages:", error);
       socket.emit("error", "Failed to fetch chat messages.");

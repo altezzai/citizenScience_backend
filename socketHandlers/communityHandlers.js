@@ -332,10 +332,10 @@ exports.getCommunityMessagesAndFeeds =
       const paginatedResults = combinedData.slice(offset, offset + limit);
 
       socket.emit("communityMessagesAndFeeds", {
-        data: paginatedResults,
         totalCount: combinedData.length,
-        page,
         totalPages: Math.ceil(combinedData.length / limit),
+        currentPage: page,
+        data: paginatedResults,
       });
     } catch (error) {
       console.error("Error fetching community messages and feeds:", error);

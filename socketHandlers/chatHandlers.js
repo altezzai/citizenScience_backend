@@ -425,11 +425,16 @@ exports.deleteChat =
 
 exports.getUserConversations =
   (io, socket) =>
-  async ({ type }) => {
+  async ({ type, page = 1, limit = 20 }) => {
+    const offset = (page - 1) * limit;
+
     try {
       const userId = socket.user.id;
 
-      const conversations = await Chats.findAll({
+      const { count, rows: conversations } = await Chats.findAndCountAll({
+        limit,
+        offset,
+        distinct: true,
         include: [
           {
             model: ChatMembers,
@@ -465,7 +470,7 @@ exports.getUserConversations =
           },
           type: type,
         },
-        order: [["updatedAt", "DESC"]],
+        order: [["createdAt", "DESC"]],
       });
 
       const deletedMessages = await DeletedMessages.findAll({
@@ -605,12 +610,39 @@ exports.getUserConversations =
         })
       );
 
+      result.sort((a, b) => {
+        const dateA = a.lastMessage
+          ? new Date(a.lastMessage.createdAt)
+          : new Date(0);
+        const dateB = b.lastMessage
+          ? new Date(b.lastMessage.createdAt)
+          : new Date(0);
+        return dateB - dateA;
+      });
+
+      const totalPages = Math.ceil(count / limit);
+
       if (type === "personal") {
-        socket.emit("personalConversations", { conversations: result });
+        socket.emit("personalConversations", {
+          totalConversations: count,
+          totalPages,
+          currentPage: page,
+          conversations: result,
+        });
       } else if (type === "group") {
-        socket.emit("groupConversations", { conversations: result });
+        socket.emit("groupConversations", {
+          totalConversations: count,
+          totalPages,
+          currentPage: page,
+          conversations: result,
+        });
       } else if (type === "community") {
-        socket.emit("communityConversations", { conversations: result });
+        socket.emit("communityConversations", {
+          totalConversations: count,
+          totalPages,
+          currentPage: page,
+          conversations: result,
+        });
       }
     } catch (error) {
       console.error("Error fetching user conversations:", error);
