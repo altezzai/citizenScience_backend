@@ -12,6 +12,7 @@ const DeletedMessages = require("../../models/deletedmessages");
 const MessageStatuses = require("../../models/messagestatuses");
 const Hashtags = require("../../models/hashtags");
 const CommunityHashtags = require("../../models/communityhashtags");
+const DeletedChats = require("../../models/deletedchats");
 
 const searchUsers = async (req, res) => {
   const userId = req.user.id;
@@ -319,23 +320,19 @@ const searchConversations = async (req, res) => {
     });
     const deletedMessageIds = deletedMessages.map((dm) => dm.messageId);
 
-    const userResults = await repositorySequelize.query(
-      `SELECT id FROM Users WHERE username LIKE ?`,
-      {
-        replacements: [`%${searchString}%`],
-        type: repositorySequelize.QueryTypes.SELECT,
-      }
+    const deletedChats = await DeletedChats.findAll({
+      where: { userId },
+      attributes: ["chatId", "deletedAt"],
+    });
+    const deletedChatMap = new Map(
+      deletedChats.map((dc) => [dc.chatId, dc.deletedAt])
     );
-    const userIds = userResults.map((user) => user.id);
 
-    const chatResults = await skrollsSequelize.query(
-      `SELECT DISTINCT chatId FROM ChatMembers WHERE userId IN (?)`,
-      {
-        replacements: [userIds],
-        type: skrollsSequelize.QueryTypes.SELECT,
-      }
-    );
-    const chatIds = chatResults.map((chat) => chat.chatId);
+    const userChats = await ChatMembers.findAll({
+      where: { userId },
+      attributes: ["chatId"],
+    });
+    const userChatIds = userChats.map((uc) => uc.chatId);
 
     const conversations = await Chats.findAll({
       include: [
@@ -345,17 +342,13 @@ const searchConversations = async (req, res) => {
         },
         {
           model: Messages,
-          attributes: [
-            "id",
-            "chatId",
-            "senderId",
-            "content",
-            "createdAt",
-            "deleteForEveryone",
-          ],
           where: {
             messageType: "regular",
             messageActive: true,
+            id: {
+              [Op.notIn]: deletedMessageIds,
+            },
+            deleteForEveryone: false,
             content: {
               [Op.like]: `%${searchString}%`,
             },
@@ -365,86 +358,86 @@ const searchConversations = async (req, res) => {
       ],
       where: {
         id: {
-          [Op.in]: chatIds,
+          [Op.in]: userChatIds,
+        },
+        type: {
+          [Op.in]: ["group", "personal"],
         },
       },
       order: [["updatedAt", "DESC"]],
     });
 
-    // Fetch user details (checking isActive or citizenActive)
-    const userPromises = Array.from(
-      new Set(
-        conversations.flatMap((convo) => [
-          ...convo.ChatMembers.map((cm) => cm.userId),
-          ...convo.Messages.map((msg) => msg.senderId),
-        ])
-      )
-    ).map((id) =>
-      repositorySequelize.query(
-        `
-        SELECT id, 
-               CASE 
-                 WHEN isActive = 0 OR citizenActive = 0 THEN 'skrolls.user' 
-                 ELSE username 
-               END AS username, 
-               profile_image 
-        FROM Users 
-        WHERE id = ?
-        `,
-        {
-          replacements: [id],
-          type: repositorySequelize.QueryTypes.SELECT,
-        }
-      )
-    );
+    const userIds = new Set();
+    conversations.forEach((convo) => {
+      convo.ChatMembers.forEach((member) => userIds.add(member.userId));
+      convo.Messages.forEach((message) => userIds.add(message.senderId));
+    });
 
-    const userResultsAll = await Promise.all(userPromises);
-    const userMap = new Map(
-      userResultsAll.flat().map((user) => [user.id, user])
-    );
+    const users = await User.findAll({
+      where: {
+        id: Array.from(userIds),
+      },
+      attributes: [
+        "id",
+        [
+          Sequelize.literal(`CASE
+            WHEN (isActive = false OR citizenActive = false)
+            THEN 'skrolls.user'
+            ELSE username
+          END`),
+          "username",
+        ],
+        [
+          Sequelize.literal(`CASE
+            WHEN (isActive = false OR citizenActive = false)
+            THEN NULL
+            ELSE profile_image
+          END`),
+          "profile_image",
+        ],
+      ],
+      raw: true,
+    });
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
 
     let relatedChats = [];
     let relatedMessages = [];
 
     conversations.forEach((conversation) => {
-      const chatMembers = conversation.ChatMembers || [];
-      const messages = conversation.Messages || [];
-
-      const validMessages = messages.filter(
-        (message) =>
-          !message.deleteForEveryone && !deletedMessageIds.includes(message.id)
+      const deletedChatDate =
+        deletedChatMap.get(conversation.id) || new Date(0);
+      const otherMember = conversation.ChatMembers.find(
+        (member) => member.userId !== userId
       );
+      const otherUser = userMap.get(otherMember?.userId);
 
-      const lastMessage = validMessages.length > 0 ? validMessages[0] : null;
-      const isDeletedChat = conversation.DeletedChats
-        ? conversation.DeletedChats.length > 0
-        : false;
-      const lastValidMessageDate = lastMessage
-        ? lastMessage.createdAt
-        : new Date(0);
-      const deletedChatDate = isDeletedChat
-        ? conversation.DeletedChats[0].deletedAt
-        : new Date(0);
+      const chatName =
+        conversation.type === "personal"
+          ? otherUser?.username || "Unknown User"
+          : conversation.name;
 
-      if (!isDeletedChat || lastValidMessageDate > deletedChatDate) {
+      const chatIcon =
+        conversation.type === "personal"
+          ? otherUser?.profile_image || null
+          : conversation.icon;
+
+      const chatMatches = chatName.toLowerCase().includes(searchString);
+
+      if (chatMatches) {
+        const lastMessage = conversation.Messages[0];
         relatedChats.push({
           chatId: conversation.id,
           type: conversation.type,
-          name:
-            conversation.type === "personal" && chatMembers.length > 0
-              ? userMap.get(chatMembers[0].userId)?.username || "Unknown"
-              : conversation.name,
-          icon:
-            conversation.type === "personal" && chatMembers.length > 0
-              ? userMap.get(chatMembers[0].userId)?.profile_image || null
-              : conversation.icon,
+          name: chatName,
+          icon: chatIcon,
           lastMessage: lastMessage
             ? {
                 id: lastMessage.id,
                 content: lastMessage.content,
                 senderId: lastMessage.senderId,
                 senderUsername:
-                  userMap.get(lastMessage.senderId)?.username || "Unknown",
+                  userMap.get(lastMessage.senderId)?.username || "Unknown User",
                 status:
                   lastMessage.senderId === userId
                     ? lastMessage.overallStatus
@@ -452,59 +445,61 @@ const searchConversations = async (req, res) => {
                 createdAt: lastMessage.createdAt,
               }
             : null,
-          unreadMessagesCount: 0,
+          unreadMessagesCount: 0, 
         });
+      }
 
-        validMessages.forEach((message) => {
+      conversation.Messages.forEach((message) => {
+        if (
+          new Date(message.createdAt) > deletedChatDate &&
+          message.content.toLowerCase().includes(searchString)
+        ) {
           relatedMessages.push({
             id: message.id,
             content: message.content,
             chatId: conversation.id,
-            chatName:
-              conversation.type === "personal" && chatMembers.length > 0
-                ? userMap.get(chatMembers[0].userId)?.username || "Unknown"
-                : conversation.name,
+            chatName: chatName,
             senderId: message.senderId,
             senderUsername:
-              userMap.get(message.senderId)?.username || "Unknown",
+              userMap.get(message.senderId)?.username || "Unknown User",
             status: message.senderId === userId ? message.overallStatus : null,
             createdAt: message.createdAt,
           });
-        });
-      }
+        }
+      });
     });
 
     relatedChats = await Promise.all(
-      relatedChats.map(async (conversation) => {
-        const unreadMessagesCount = await MessageStatuses.count({
-          include: [
-            {
-              model: Messages,
-              attributes: [],
-              where: {
-                chatId: conversation.chatId,
-                messageActive: true,
-                createdAt: {
-                  [Op.gt]: conversation.lastMessage
-                    ? conversation.lastMessage.createdAt
-                    : new Date(0),
+      relatedChats.map(async (chat) => {
+        if (chat.lastMessage) {
+          const unreadMessagesCount = await MessageStatuses.count({
+            include: [
+              {
+                model: Messages,
+                attributes: [],
+                where: {
+                  chatId: chat.chatId,
+                  createdAt: {
+                    [Op.gt]: chat.lastMessage.createdAt,
+                  },
+                  deleteForEveryone: false,
                 },
-                deleteForEveryone: false,
+              },
+            ],
+            where: {
+              userId: userId,
+              status: {
+                [Op.in]: ["sent", "received"],
               },
             },
-          ],
-          where: {
-            userId: userId,
-            status: {
-              [Op.in]: ["sent", "received"],
-            },
-          },
-        });
+          });
 
-        return {
-          ...conversation,
-          unreadMessagesCount,
-        };
+          return {
+            ...chat,
+            unreadMessagesCount,
+          };
+        }
+        return chat;
       })
     );
 
