@@ -603,9 +603,32 @@ exports.getUserConversations =
             },
           });
 
+          const sentMessages = await MessageStatuses.findAll({
+            include: [
+              {
+                model: Messages,
+                attributes: ["id"],
+                where: {
+                  chatId: conversation.chatId,
+                  deleteForEveryone: false,
+                },
+              },
+            ],
+            where: {
+              userId: userId,
+              status: "sent",
+            },
+            attributes: [],
+          });
+
+          const sentMessageIds = sentMessages.map(
+            (message) => message.Message.id
+          );
+
           return {
             ...conversation,
             unreadMessagesCount,
+            sentMessageIds,
           };
         })
       );
