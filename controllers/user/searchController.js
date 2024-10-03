@@ -250,7 +250,7 @@ const searchCommunities = async (req, res) => {
 };
 
 const searchMembers = async (req, res) => {
-  const { chatId } = req.params;
+  const chatId = parseInt(req.query.chatId);
   const userId = req.user.id;
   const searchItem = req.query.q;
 
@@ -267,10 +267,21 @@ const searchMembers = async (req, res) => {
 
     const followerIds = followers.map((follower) => follower.followingId);
 
+    const followings = await Followers.findAll({
+      where: {
+        followingId: userId,
+      },
+      attributes: ["followerId"],
+    });
+
+    const followingIds = followings.map((following) => following.followerId);
+
+    const uniqueIds = [...new Set([...followerIds, ...followingIds])];
+
     const users = await User.findAll({
       where: {
         id: {
-          [Op.in]: followerIds,
+          [Op.in]: uniqueIds,
         },
         username: {
           [Op.like]: `%${searchItem}%`,
@@ -281,24 +292,27 @@ const searchMembers = async (req, res) => {
       attributes: ["id", "username", "profile_image"],
     });
 
-    const userIds = users.map((user) => user.id);
+    let filteredUsers;
 
-    const chatMembers = await ChatMembers.findAll({
-      where: {
-        chatId: chatId,
-        userId: {
-          [Op.in]: userIds,
+    if (chatId) {
+      const userIds = users.map((user) => user.id);
+
+      const chatMembers = await ChatMembers.findAll({
+        where: {
+          chatId: chatId,
+          userId: {
+            [Op.in]: userIds,
+          },
         },
-      },
-      attributes: ["userId"],
-    });
+        attributes: ["userId"],
+      });
 
-    const chatMemberIds = chatMembers.map((member) => member.userId);
+      const chatMemberIds = chatMembers.map((member) => member.userId);
 
-    const filteredUsers = users.filter(
-      (user) => !chatMemberIds.includes(user.id)
-    );
-    res.status(200).json(filteredUsers);
+      filteredUsers = users.filter((user) => !chatMemberIds.includes(user.id));
+    }
+
+    res.status(200).json(chatId ? filteredUsers : users);
   } catch (error) {
     console.error("Error in searching users:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -308,6 +322,7 @@ const searchMembers = async (req, res) => {
 const searchConversations = async (req, res) => {
   const userId = req.user.id;
   const searchString = req.query.q;
+  const isCommunity = req.query.isCommunity === "true" || false;
 
   try {
     if (!searchString || searchString.trim() === "") {
@@ -335,6 +350,7 @@ const searchConversations = async (req, res) => {
     const userChatIds = userChats.map((uc) => uc.chatId);
 
     const conversations = await Chats.findAll({
+      limit: 100,
       include: [
         {
           model: ChatMembers,
@@ -360,9 +376,11 @@ const searchConversations = async (req, res) => {
         id: {
           [Op.in]: userChatIds,
         },
-        type: {
-          [Op.in]: ["group", "personal"],
-        },
+        type: isCommunity
+          ? "community"
+          : {
+              [Op.in]: ["group", "personal"],
+            },
       },
       order: [["updatedAt", "DESC"]],
     });
@@ -445,7 +463,7 @@ const searchConversations = async (req, res) => {
                 createdAt: lastMessage.createdAt,
               }
             : null,
-          unreadMessagesCount: 0, 
+          unreadMessagesCount: 0,
         });
       }
 
