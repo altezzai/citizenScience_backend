@@ -13,6 +13,7 @@ const MessageStatuses = require("../../models/messagestatuses");
 const Hashtags = require("../../models/hashtags");
 const CommunityHashtags = require("../../models/communityhashtags");
 const DeletedChats = require("../../models/deletedchats");
+const BlockedChats = require("../../models/blockedchats");
 
 const searchUsers = async (req, res) => {
   const userId = req.user.id;
@@ -323,6 +324,13 @@ const searchMembers = async (req, res) => {
       attributes: ["id", "username", "profile_image"],
     });
 
+    const blockedUsers = await BlockedChats.findAll({
+      where: { blockedBy: userId },
+      attributes: ["blockedUser"],
+    });
+
+    const blockedByUserIds = blockedUsers.map((blocked) => blocked.blockedUser);
+
     let filteredUsers;
 
     if (chatId) {
@@ -341,9 +349,16 @@ const searchMembers = async (req, res) => {
       const chatMemberIds = chatMembers.map((member) => member.userId);
 
       filteredUsers = users.filter((user) => !chatMemberIds.includes(user.id));
+    } else {
+      filteredUsers = users;
     }
 
-    res.status(200).json(chatId ? filteredUsers : users);
+    const usersWithBlockStatus = filteredUsers.map((user) => ({
+      ...user.toJSON(),
+      blockedByUser: blockedByUserIds.includes(user.id),
+    }));
+
+    res.status(200).json(usersWithBlockStatus);
   } catch (error) {
     console.error("Error in searching users:", error);
     res.status(500).json({ error: "Internal server error" });

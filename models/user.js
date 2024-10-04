@@ -22,6 +22,7 @@ const OtherIds = require("./otherids");
 const FeedViews = require("./feedviews");
 const Reports = require("./reports");
 const Actions = require("./actions");
+const BlockedChats = require("./blockedchats");
 
 const User = repositorySequelize.define(
   "User",
@@ -229,5 +230,11 @@ Actions.belongsTo(User, { foreignKey: "userId", as: "reportedUser" });
 
 User.hasMany(Actions, { foreignKey: "reviewedBy" });
 Actions.belongsTo(User, { foreignKey: "reviewedBy", as: "reviewer" });
+
+User.hasMany(BlockedChats, { foreignKey: "blockedBy" });
+BlockedChats.belongsTo(User, { foreignKey: "blockedBy", as: "blockedById" });
+
+User.hasMany(BlockedChats, { foreignKey: "blockedUser" });
+BlockedChats.belongsTo(User, { foreignKey: "blockedUser", as: "blockedId" });
 
 module.exports = User;

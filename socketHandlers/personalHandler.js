@@ -1,4 +1,4 @@
-const { Op, Sequelize } = require("sequelize");
+const { Op, Sequelize, where } = require("sequelize");
 const {
   skrollsSequelize,
   repositorySequelize,
@@ -9,6 +9,7 @@ const DeletedChats = require("../models/deletedchats");
 const Messages = require("../models/messages");
 const DeletedMessages = require("../models/deletedmessages");
 const User = require("../models/user");
+const BlockedChats = require("../models/blockedchats");
 
 exports.directMessage =
   (io, socket) =>
@@ -173,5 +174,57 @@ exports.directMessage =
     } catch (error) {
       console.error("Error checking or creating direct message chat:", error);
       socket.emit("error", "Failed to check or create direct message.");
+    }
+  };
+
+exports.toggleBlock =
+  (io, socket) =>
+  async ({ chatId, blockedUser }) => {
+    try {
+      const blockedBy = socket.user.id;
+
+      const chat = await Chats.findByPk(chatId, {
+        where: { type: "personal" },
+      });
+      if (!chat) {
+        return socket.emit("error", "Not a personal chat");
+      }
+
+      const chatMembers = await ChatMembers.findAll({
+        where: {
+          chatId,
+          userId: {
+            [Op.in]: [blockedBy, blockedUser],
+          },
+        },
+      });
+
+      if (chatMembers.length !== 2) {
+        return socket.emit("error", "Both users must be members of the chat");
+      }
+
+      const isBlocked = await BlockedChats.findOne({
+        where: { chatId, blockedBy, blockedUser },
+      });
+
+      if (isBlocked) {
+        await BlockedChats.destroy({
+          where: {
+            chatId,
+            blockedBy,
+            blockedUser,
+          },
+        });
+      } else {
+        await BlockedChats.create({ chatId, blockedBy, blockedUser });
+      }
+
+      socket.emit(
+        "blockStatus",
+        isBlocked ? "Unblocked successfully" : "Blocked successfully"
+      );
+    } catch (error) {
+      console.error("error on blocking", error);
+      socket.emit("error", "Failed to block user");
     }
   };
