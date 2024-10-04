@@ -10,6 +10,7 @@ const MessageStatuses = require("../models/messagestatuses");
 const User = require("../models/user");
 const DeletedMessages = require("../models/deletedmessages");
 const DeletedChats = require("../models/deletedchats");
+const BlockedChats = require("../models/blockedchats");
 
 exports.sendMessage = (io, socket) => async (data) => {
   const { chatId, content, mediaUrl, replyToId, sentAt } = data;
@@ -35,11 +36,40 @@ exports.sendMessage = (io, socket) => async (data) => {
         chatId,
         userId: senderId,
       },
+      transaction,
     });
 
     if (!isMember) {
       socket.emit("error", "User is not a member of this chat.");
       return;
+    }
+
+    if (chat.type === "personal") {
+      const otherUserId = await ChatMembers.findOne({
+        where: {
+          chatId,
+          userId: { [Op.ne]: senderId },
+        },
+        transaction,
+      }).then((member) => member.userId);
+
+      const blockedChat = await BlockedChats.findOne({
+        where: {
+          chatId,
+          [Op.or]: [
+            { blockedBy: senderId, blockedUser: otherUserId },
+            { blockedBy: otherUserId, blockedUser: senderId },
+          ],
+        },
+      });
+
+      if (blockedChat) {
+        if (blockedChat.blockedBy === senderId) {
+          return socket.emit("error", "You have blocked this chat.");
+        } else {
+          return socket.emit("error", "You have been blocked in this chat.");
+        }
+      }
     }
 
     const message = await Messages.create(
@@ -103,6 +133,42 @@ exports.getMessages =
       if (!isMember) {
         socket.emit("error", "User is not a member of this chat.");
         return;
+      }
+
+      const chat = await Chats.findByPk(chatId);
+      let blockStatus;
+
+      if (chat.type === "personal") {
+        const otherUserId = await ChatMembers.findOne({
+          where: {
+            chatId,
+            userId: { [Op.ne]: userId },
+          },
+        }).then((member) => member.userId);
+
+        const blockedChat = await BlockedChats.findOne({
+          where: {
+            chatId,
+            [Op.or]: [
+              {
+                blockedBy: userId,
+                blockedUser: otherUserId,
+              },
+              {
+                blockedBy: otherUserId,
+                blockedUser: userId,
+              },
+            ],
+          },
+        });
+
+        if (blockedChat) {
+          if (blockedChat.blockedBy === userId) {
+            blockStatus = "You have blocked this chat";
+          } else {
+            blockStatus = "You have been blocked in this chat";
+          }
+        }
       }
 
       const offset = (page - 1) * limit;
@@ -169,6 +235,7 @@ exports.getMessages =
           {
             model: Messages,
             as: "replyTo",
+            required: false,
             where: { messageActive: true },
             attributes: {
               include: [
@@ -222,12 +289,13 @@ exports.getMessages =
         (message) => message !== null
       );
 
-      const totalPages = Math.ceil(count.length / limit);
+      const totalPages = Math.ceil(count / limit);
 
       socket.emit("messages", {
         totalConversations: count,
         totalPages,
         currentPage: page,
+        blockStatus,
         messages: validMessages,
       });
     } catch (error) {

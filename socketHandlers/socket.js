@@ -48,6 +48,8 @@ module.exports = (io, socket) => {
 
   socket.on("makeAdmin", groupHandlers.makeAdmin(io, socket));
 
+  socket.on("dismissAdmin", groupHandlers.dismissAdmin(io, socket));
+
   socket.on("leaveChat", groupHandlers.leaveChat(io, socket));
 
   socket.on(
@@ -67,6 +69,7 @@ module.exports = (io, socket) => {
   //personal section
 
   socket.on("directMessage", personalHandlers.directMessage(io, socket));
+  socket.on("toggleBlock", personalHandlers.toggleBlock(io, socket));
 
   //disconnecting
   socket.on("disconnect", () => {

@@ -8,6 +8,7 @@ const ChatMembers = require("../models/chatmembers");
 const Messages = require("../models/messages");
 const MessageStatuses = require("../models/messagestatuses");
 const User = require("../models/user");
+const BlockedChats = require("../models/blockedchats");
 
 exports.addMemberToChat =
   (io, socket) =>
@@ -25,8 +26,31 @@ exports.addMemberToChat =
       });
 
       if (!chat) {
-        socket.emit("error", "Chat not found or not a group/community.");
-        return;
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit("error", "Chat not found or not a group/community.");
+      }
+
+      const blockedChat = await BlockedChats.findOne({
+        where: {
+          chatId,
+          [Op.or]: [
+            { blockedBy: addedBy, blockedUser: userId },
+            { blockedBy: userId, blockedUser: addedBy },
+          ],
+        },
+      });
+
+      if (blockedChat) {
+        if (blockedChat.blockedBy === addedBy) {
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit("error", "You have blocked this chat.");
+        } else {
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit("error", "You have been blocked in this chat.");
+        }
       }
 
       const adminCheck = await ChatMembers.findOne({
@@ -52,8 +76,9 @@ exports.addMemberToChat =
       });
 
       if (!adminCheck) {
-        socket.emit("error", "Only admins can add members to the chat.");
-        return;
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit("error", "Only admins can add members to the chat.");
       }
 
       const existingMember = await ChatMembers.findOne({
@@ -65,8 +90,9 @@ exports.addMemberToChat =
       });
 
       if (existingMember) {
-        socket.emit("error", "User is already a member of the chat.");
-        return;
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit("error", "User is already a member of the chat.");
       }
 
       const user = await User.findOne({
@@ -76,8 +102,9 @@ exports.addMemberToChat =
       });
 
       if (!user) {
-        socket.emit("error", "User not found.");
-        return;
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit("error", "User not found.");
       }
 
       const newMember = await ChatMembers.create(
@@ -176,7 +203,7 @@ exports.makeAdmin =
       await skrollsTransaction.commit();
       await repositoryTransaction.commit();
 
-      io.to(chatId).emit("adminMade", {
+      socket.emit("adminMade", {
         chatId,
         userId,
         madeBy,
@@ -187,6 +214,88 @@ exports.makeAdmin =
       await repositoryTransaction.rollback();
       console.error("Error making user an admin:", error);
       socket.emit("error", "Failed to make user an admin.");
+    }
+  };
+
+exports.dismissAdmin =
+  (io, socket) =>
+  async ({ chatId, userId }) => {
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
+
+    try {
+      const dismissedBy = socket.user.id;
+      const requester = await ChatMembers.findOne({
+        where: { chatId, userId: dismissedBy },
+        transaction: skrollsTransaction,
+      });
+
+      if (!requester || !requester.isAdmin) {
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit(
+          "error",
+          "You do not have permission to dismiss an admin."
+        );
+      }
+
+      const chat = await Chats.findByPk(chatId, {
+        transaction: skrollsTransaction,
+      });
+
+      if (chat.createdBy === userId) {
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit(
+          "error",
+          "Cannot remove admin privileges from the chat creator."
+        );
+      }
+
+      const result = await ChatMembers.update(
+        { isAdmin: false },
+        { where: { chatId, userId }, transaction: skrollsTransaction }
+      );
+
+      if (result[0] === 0) {
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit(
+          "error",
+          "Failed to dismiss admin. User may not be part of the chat or not an admin."
+        );
+      }
+
+      const user = await User.findByPk(userId, {
+        transaction: repositoryTransaction,
+      });
+
+      const adminMessage = await Messages.create(
+        {
+          chatId,
+          senderId: dismissedBy,
+          content: `${user.username} has been dismissed as an admin.`,
+          messageType: "system",
+          overallStatus: "sent",
+          sentAt: new Date(),
+        },
+        { transaction: skrollsTransaction }
+      );
+
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
+
+      socket.emit("adminDismissed", {
+        chatId,
+        userId,
+        dismissedBy,
+        adminMessage,
+      });
+    } catch (error) {
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
+      console.error("Error dismissing admin:", error);
+      socket.emit("error", "Failed to dismiss admin.");
     }
   };
 
@@ -241,6 +350,12 @@ exports.removeMemberFromChat =
         await skrollsTransaction.rollback();
         await repositoryTransaction.rollback();
         return;
+      }
+
+      if (chat.createdBy === userId) {
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit("error", "Cannot remove the chat creator.");
       }
 
       const user = await User.findOne({

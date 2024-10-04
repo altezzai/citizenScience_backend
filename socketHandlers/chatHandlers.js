@@ -29,13 +29,16 @@ exports.createChat =
   }) => {
     const createdBy = socket.user.id;
 
-    const transaction = await skrollsSequelize.transaction();
+    const skrollsTransaction = await skrollsSequelize.transaction();
+    const repositoryTransaction = await repositorySequelize.transaction();
     try {
       if ((type === "group" || type === "community") && !name) {
-        console.log("Name is required for group and community chats.");
-        socket.emit("error", "Name is required for group and community chats.");
-
-        return;
+        await skrollsTransaction.rollback();
+        await repositoryTransaction.rollback();
+        return socket.emit(
+          "error",
+          "Name is required for group and community chats."
+        );
       }
       if (!members.includes(createdBy)) {
         members.push(createdBy);
@@ -44,8 +47,21 @@ exports.createChat =
 
       if (type === "personal") {
         if (members.length !== 2) {
-          socket.emit("error", "Personal chat must have exactly two members.");
-          return;
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit(
+            "error",
+            "Personal chat must have exactly two members."
+          );
+        }
+
+        if (!initialMessage) {
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit(
+            "error",
+            "Personal chat must have initial message."
+          );
         }
 
         const existingChat = await Chats.findOne({
@@ -63,14 +79,51 @@ exports.createChat =
           ],
         });
         if (existingChat) {
-          socket.emit("error", "chat already exist");
-          return;
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit("error", "chat already exist");
         }
       }
 
       if (type === "group" || type === "community") {
         if (members.length < 2) {
-          socket.emit("error", "chat must have exactly two members or above.");
+          await skrollsTransaction.rollback();
+          await repositoryTransaction.rollback();
+          return socket.emit(
+            "error",
+            "chat must have exactly two members or above."
+          );
+        }
+
+        const blockedUsers = await BlockedChats.findAll({
+          where: {
+            [Op.or]: [
+              { blockedBy: createdBy, blockedUser: { [Op.in]: members } },
+              { blockedBy: { [Op.in]: members }, blockedUser: createdBy },
+            ],
+          },
+          transaction: skrollsTransaction,
+        });
+
+        if (blockedUsers.length > 0) {
+          const blockedUserIds = new Set([
+            ...blockedUsers.map((bu) => bu.blockedUser),
+            ...blockedUsers.map((bu) => bu.blockedBy),
+          ]);
+
+          members = members.filter(
+            (memberId) =>
+              !blockedUserIds.has(memberId) || memberId === createdBy
+          );
+
+          if (members.length < 2) {
+            await skrollsTransaction.rollback();
+            await repositoryTransaction.rollback();
+            return socket.emit(
+              "error",
+              "Cannot create chat. All selected members are blocked or have blocked you."
+            );
+          }
         }
       }
 
@@ -82,7 +135,7 @@ exports.createChat =
           icon,
           description,
         },
-        { transaction }
+        { transaction: skrollsTransaction }
       );
 
       await Promise.all(
@@ -93,24 +146,47 @@ exports.createChat =
               userId,
               isAdmin: userId === createdBy,
             },
-            { transaction }
+            { transaction: skrollsTransaction }
           )
         )
       );
+
+      const user = await User.findByPk(createdBy, {
+        transaction: repositoryTransaction,
+      });
+
+      if (chat) {
+        if (type === "group" || type === "community") {
+          await Messages.create(
+            {
+              chatId: chat.id,
+              senderId: createdBy,
+              content:
+                type === "group"
+                  ? `${user.username} has created the group `
+                  : `${user.username} has created the community `,
+              messageType: "system",
+              overallStatus: "sent",
+              sentAt: new Date(),
+            },
+            { transaction: skrollsTransaction }
+          );
+        }
+      }
 
       if (type === "community" && hashtags && hashtags.length > 0) {
         await Promise.all(
           hashtags.map(async (hashtagName) => {
             const [hashtag] = await Hashtags.findOrCreate({
               where: { hashtag: hashtagName },
-              transaction,
+              transaction: skrollsTransaction,
             });
             await CommunityHashtags.create(
               {
                 chatId: chat.id,
                 hashtagId: hashtag.id,
               },
-              { transaction }
+              { transaction: skrollsTransaction }
             );
           })
         );
@@ -126,7 +202,7 @@ exports.createChat =
             sentAt: sentAt ? new Date(sentAt) : new Date(),
             overallStatus: "sent",
           },
-          { transaction }
+          { transaction: skrollsTransaction }
         );
         await Promise.all(
           members
@@ -139,7 +215,7 @@ exports.createChat =
                   status: "sent",
                   sentAt: sentAt ? new Date(sentAt) : new Date(),
                 },
-                { transaction }
+                { transaction: skrollsTransaction }
               )
             )
         );
@@ -147,11 +223,13 @@ exports.createChat =
         io.to(chat.id).emit("newMessage", message);
       }
 
-      await transaction.commit();
+      await skrollsTransaction.commit();
+      await repositoryTransaction.commit();
 
       socket.emit("chatCreated", chat);
     } catch (error) {
-      await transaction.rollback();
+      await skrollsTransaction.rollback();
+      await repositoryTransaction.rollback();
       console.error("Error adding chat:", error);
       socket.emit("error", "Failed to add chat.");
     }

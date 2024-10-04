@@ -5,6 +5,7 @@ const ChatMembers = require("./chatmembers");
 const DeletedChats = require("./deletedchats");
 const CommunityFeeds = require("./communityfeeds");
 const CommunityHashtags = require("./communityhashtags");
+const BlockedChats = require("./blockedchats");
 
 const Chats = skrollsSequelize.define(
   "Chats",
@@ -68,5 +69,8 @@ CommunityFeeds.belongsTo(Chats, { foreignKey: "chatId" });
 
 Chats.hasMany(CommunityHashtags, { foreignKey: "chatId" });
 CommunityHashtags.belongsTo(Chats, { foreignKey: "chatId" });
+
+Chats.hasMany(BlockedChats, { foreignKey: "chatId" });
+BlockedChats.belongsTo(Chats, { foreignKey: "chatId" });
 
 module.exports = Chats;
