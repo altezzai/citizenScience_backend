@@ -16,7 +16,7 @@ const DeletedChats = require("../../models/deletedchats");
 
 const searchUsers = async (req, res) => {
   const userId = req.user.id;
-  const searchQuery = req.query.q;
+  const searchQuery = req.query.q.toLowerCase();
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
@@ -27,7 +27,14 @@ const searchUsers = async (req, res) => {
     }
     const matchingUsers = await User.findAll({
       where: {
-        username: { [Op.like]: `%${searchQuery}%` },
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn("LOWER", Sequelize.col("User.username")),
+            {
+              [Op.like]: `%${searchQuery}%`,
+            }
+          ),
+        ],
         id: { [Op.not]: userId },
         isActive: true,
         citizenActive: true,
@@ -92,7 +99,7 @@ const searchUsers = async (req, res) => {
 
 const searchFeedHashtags = async (req, res) => {
   const userId = req.user.id;
-  const searchQuery = req.query.q;
+  const searchQuery = req.query.q.toLowerCase();
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
@@ -114,11 +121,15 @@ const searchFeedHashtags = async (req, res) => {
               include: [
                 {
                   model: Hashtags,
-                  where: {
-                    hashtag: {
+                  where: Sequelize.where(
+                    Sequelize.fn(
+                      "LOWER",
+                      Sequelize.col("Chat->CommunityHashtags->Hashtag.hashtag")
+                    ),
+                    {
                       [Op.like]: `%${searchQuery}%`,
-                    },
-                  },
+                    }
+                  ),
                   attributes: ["id", "hashtag", "usageCount"],
                 },
               ],
@@ -142,12 +153,19 @@ const searchFeedHashtags = async (req, res) => {
 
     const otherHashtags = await Hashtags.findAll({
       where: {
-        hashtag: {
-          [Op.like]: `%${searchQuery}%`,
-        },
-        id: {
-          [Op.notIn]: userCommunityHashtags.map((h) => h.id),
-        },
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn("LOWER", Sequelize.col("Hashtags.hashtag")),
+            {
+              [Op.like]: `%${searchQuery}%`,
+            }
+          ),
+          {
+            id: {
+              [Op.notIn]: userCommunityHashtags.map((h) => h.id),
+            },
+          },
+        ],
       },
       attributes: ["id", "hashtag", "usageCount"],
       order: [["usageCount", "DESC"]],
@@ -182,7 +200,7 @@ const searchFeedHashtags = async (req, res) => {
 };
 
 const searchHashtags = async (req, res) => {
-  const searchQuery = req.query.q;
+  const searchQuery = req.query.q.toLowerCase();
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
@@ -192,11 +210,12 @@ const searchHashtags = async (req, res) => {
       return res.status(400).json({ error: "Search query is required" });
     }
     const hashtags = await Hashtags.findAll({
-      where: {
-        hashtag: {
+      where: Sequelize.where(
+        Sequelize.fn("LOWER", Sequelize.col("Hashtags.hashtag")),
+        {
           [Op.like]: `%${searchQuery}%`,
-        },
-      },
+        }
+      ),
       attributes: ["id", "hashtag", "usageCount"],
       order: [["usageCount", "DESC"]],
       limit,
@@ -212,7 +231,7 @@ const searchHashtags = async (req, res) => {
 
 const searchCommunities = async (req, res) => {
   const userId = req.user.id;
-  const searchQuery = req.query.q;
+  const searchQuery = req.query.q.toLowerCase();
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
@@ -223,10 +242,14 @@ const searchCommunities = async (req, res) => {
     }
     const communities = await Chats.findAll({
       where: {
-        name: {
-          [Op.like]: `%${searchQuery}%`,
-        },
-        type: "community",
+        [Op.and]: [
+          Sequelize.where(Sequelize.fn("LOWER", Sequelize.col("Chats.name")), {
+            [Op.like]: `%${searchQuery}%`,
+          }),
+          {
+            type: "community",
+          },
+        ],
       },
       attributes: ["id", "name", "icon"],
       include: [
@@ -252,7 +275,7 @@ const searchCommunities = async (req, res) => {
 const searchMembers = async (req, res) => {
   const chatId = parseInt(req.query.chatId);
   const userId = req.user.id;
-  const searchItem = req.query.q;
+  const searchItem = req.query.q.toLowerCase();
 
   try {
     if (!searchItem || searchItem.trim() === "") {
@@ -280,15 +303,23 @@ const searchMembers = async (req, res) => {
 
     const users = await User.findAll({
       where: {
-        id: {
-          [Op.in]: uniqueIds,
-        },
-        username: {
-          [Op.like]: `%${searchItem}%`,
-        },
-        isActive: true,
-        citizenActive: true,
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn("LOWER", Sequelize.col("User.username")),
+            {
+              [Op.like]: `%${searchItem}%`,
+            }
+          ),
+          {
+            id: {
+              [Op.in]: uniqueIds,
+            },
+            isActive: true,
+            citizenActive: true,
+          },
+        ],
       },
+
       attributes: ["id", "username", "profile_image"],
     });
 
@@ -321,7 +352,7 @@ const searchMembers = async (req, res) => {
 
 const searchConversations = async (req, res) => {
   const userId = req.user.id;
-  const searchString = req.query.q;
+  const searchString = req.query.q.toLowerCase();
   const isCommunity = req.query.isCommunity === "true" || false;
 
   try {
@@ -365,10 +396,16 @@ const searchConversations = async (req, res) => {
               [Op.notIn]: deletedMessageIds,
             },
             deleteForEveryone: false,
-            content: {
-              [Op.like]: `%${searchString}%`,
-            },
+            [Op.and]: [
+              Sequelize.where(
+                Sequelize.fn("LOWER", Sequelize.col("Messages.content")),
+                {
+                  [Op.like]: `%${searchString}%`,
+                }
+              ),
+            ],
           },
+          order: [["createdAt", "DESC"]],
           required: false,
         },
       ],
@@ -382,8 +419,25 @@ const searchConversations = async (req, res) => {
               [Op.in]: ["group", "personal"],
             },
       },
-      order: [["updatedAt", "DESC"]],
+      order: [["createdAt", "DESC"]],
     });
+
+    const lastMessages = await Messages.findAll({
+      where: {
+        chatId: {
+          [Op.in]: conversations.map((c) => c.id),
+        },
+        messageType: "regular",
+        messageActive: true,
+        id: {
+          [Op.notIn]: deletedMessageIds,
+        },
+        deleteForEveryone: false,
+      },
+      order: [["createdAt", "ASC"]],
+    });
+
+    const lastMessageMap = new Map(lastMessages.map((m) => [m.chatId, m]));
 
     const userIds = new Set();
     conversations.forEach((convo) => {
@@ -440,10 +494,13 @@ const searchConversations = async (req, res) => {
           ? otherUser?.profile_image || null
           : conversation.icon;
 
-      const chatMatches = chatName.toLowerCase().includes(searchString);
+      const chatMatches = chatName
+        .toLowerCase()
+        .includes(searchString.toLowerCase());
 
       if (chatMatches) {
-        const lastMessage = conversation.Messages[0];
+        const lastMessage = lastMessageMap.get(conversation.id);
+
         relatedChats.push({
           chatId: conversation.id,
           type: conversation.type,
@@ -497,9 +554,7 @@ const searchConversations = async (req, res) => {
                 attributes: [],
                 where: {
                   chatId: chat.chatId,
-                  createdAt: {
-                    [Op.gt]: chat.lastMessage.createdAt,
-                  },
+
                   deleteForEveryone: false,
                 },
               },

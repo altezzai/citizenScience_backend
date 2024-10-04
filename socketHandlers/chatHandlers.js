@@ -449,6 +449,7 @@ exports.getUserConversations =
             model: Messages,
             where: {
               messageType: "regular",
+              messageActive: true,
             },
             attributes: [
               "id",
@@ -579,27 +580,23 @@ exports.getUserConversations =
 
       const result = await Promise.all(
         filteredConversations.map(async (conversation) => {
-          const unreadMessagesCount = await MessageStatuses.count({
+          const unreadMessagesCount = await Messages.count({
             include: [
               {
-                model: Messages,
-                attributes: [],
+                model: MessageStatuses,
                 where: {
-                  chatId: conversation.chatId,
-                  createdAt: {
-                    [Op.gt]: conversation.lastMessage
-                      ? conversation.lastMessage.createdAt
-                      : new Date(0),
+                  userId: userId,
+                  status: {
+                    [Op.in]: ["sent", "received"],
                   },
-                  deleteForEveryone: false,
                 },
+                required: true,
               },
             ],
             where: {
-              userId: userId,
-              status: {
-                [Op.in]: ["sent", "received"],
-              },
+              chatId: conversation.chatId,
+              senderId: { [Op.ne]: userId },
+              deleteForEveryone: false,
             },
           });
 
