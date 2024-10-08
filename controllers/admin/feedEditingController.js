@@ -93,8 +93,31 @@ const getSolvedFeeds = async (req, res) => {
   }
 };
 
+const addDescription = async (req, res) => {
+  const { feedId } = req.params;
+  const { simplified_description } = req.body;
+
+  try {
+    const feed = await Feed.findByPk(feedId);
+    if (!feed) {
+      return res.status(400).json({ error: "Feed not found" });
+    }
+
+    if (!feed.editPermission) {
+      return res.status(400).json({ error: "No edit permission" });
+    }
+
+    await feed.update({ simplified_description, isAdminEdited: true });
+    res.status(200).json({ success: "simplified_description added" });
+  } catch (error) {
+    console.error(error);
+    return res.status(404).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   getPendingFeeds,
   getFeedDetails,
   getSolvedFeeds,
+  addDescription,
 };

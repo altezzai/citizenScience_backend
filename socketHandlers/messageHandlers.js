@@ -65,9 +65,9 @@ exports.sendMessage = (io, socket) => async (data) => {
 
       if (blockedChat) {
         if (blockedChat.blockedBy === senderId) {
-          return socket.emit("error", "You have blocked this chat.");
+          return socket.emit("error", "You have blocked this user.");
         } else {
-          return socket.emit("error", "You have been blocked in this chat.");
+          return socket.emit("error", "You have been blocked in this user.");
         }
       }
     }
