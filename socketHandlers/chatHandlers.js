@@ -13,6 +13,7 @@ const DeletedChats = require("../models/deletedchats");
 const DeletedMessages = require("../models/deletedmessages");
 const Hashtags = require("../models/hashtags");
 const CommunityHashtags = require("../models/communityhashtags");
+const BlockedChats = require("../models/blockedchats");
 
 exports.createChat =
   (io, socket) =>
