@@ -69,14 +69,7 @@ const addFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    // const user = await User.findOne({
-    //   where: { id: userId },
-    //   attributes: ["isBanned"],
-    // });
 
-    // if (user.isBanned) {
-    //   return res.status(403).json({ error: "User account is banned" });
-    // }
     const fileName = files.map((file) => file.filename);
     const newFeed = await Feed.create(
       {
@@ -177,14 +170,6 @@ const updateFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    // const user = await User.findOne({
-    //   where: { id: userId },
-    //   attributes: ["isBanned"],
-    // });
-
-    // if (user.isBanned) {
-    //   return res.status(403).json({ error: "User account is banned" });
-    // }
 
     const feedExist = await Feed.findOne({
       where: { id, feedActive: true, isDeleted: false, isArchive: false },
@@ -490,14 +475,7 @@ const deleteFeed = async (req, res) => {
 
   try {
     const userId = req.user.id;
-    // const user = await User.findOne({
-    //   where: { id: userId },
-    //   attributes: ["isBanned"],
-    // });
 
-    // if (user.isBanned) {
-    //   return res.status(403).json({ error: "User account is banned" });
-    // }
     const feedExist = await Feed.findOne({
       where: { id, feedActive: true, isDeleted: false },
     });

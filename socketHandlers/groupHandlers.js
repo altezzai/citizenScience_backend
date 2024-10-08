@@ -45,11 +45,11 @@ exports.addMemberToChat =
         if (blockedChat.blockedBy === addedBy) {
           await skrollsTransaction.rollback();
           await repositoryTransaction.rollback();
-          return socket.emit("error", "You have blocked this chat.");
+          return socket.emit("error", "You have blocked this user.");
         } else {
           await skrollsTransaction.rollback();
           await repositoryTransaction.rollback();
-          return socket.emit("error", "You have been blocked in this chat.");
+          return socket.emit("error", "You have been blocked in this user.");
         }
       }
 
