@@ -11,6 +11,7 @@ const User = require("../models/user");
 const DeletedMessages = require("../models/deletedmessages");
 const DeletedChats = require("../models/deletedchats");
 const BlockedChats = require("../models/blockedchats");
+const socket = require("./socket");
 
 exports.sendMessage = (io, socket) => async (data) => {
   const { chatId, content, mediaUrl, replyToId, sentAt } = data;
@@ -120,7 +121,7 @@ exports.sendMessage = (io, socket) => async (data) => {
 
 exports.getMessages =
   (io, socket) =>
-  async ({ chatId, page = 1, limit = 20 }) => {
+  async ({ chatId, page = 1, limit = 20, lastMessageId = null }) => {
     try {
       const userId = socket.user.id;
       const isMember = await ChatMembers.findOne({
@@ -171,7 +172,7 @@ exports.getMessages =
         }
       }
 
-      const offset = (page - 1) * limit;
+      // const offset = (page - 1) * limit;
       const deletedChat = await DeletedChats.findOne({
         where: {
           userId,
@@ -189,12 +190,16 @@ exports.getMessages =
         whereClause.createdAt = { [Op.gt]: deletedChat.deletedAt };
       }
 
+      if (lastMessageId) {
+        whereClause.id = { [Op.lt]: lastMessageId };
+      }
+
       const { count, rows: messages } = await Messages.findAndCountAll({
         distinct: true,
         where: whereClause,
         order: [["createdAt", "DESC"]],
         limit,
-        offset,
+        // offset,
         attributes: [
           "id",
           "mediaUrl",
@@ -301,6 +306,122 @@ exports.getMessages =
     } catch (error) {
       console.error("Error fetching chat messages:", error);
       socket.emit("error", "Failed to fetch chat messages.");
+    }
+  };
+
+exports.getNewMessages =
+  (io, socket) =>
+  async ({ chatId, lastSeenMessageId }) => {
+    try {
+      const userId = socket.user.id;
+
+      const lastSeenMessage = await Messages.findByPk(lastSeenMessageId);
+      if (!lastSeenMessage) {
+        return socket.emit("error", "Invalid last seen message Id");
+      }
+
+      const newMessages = await Messages.findAll({
+        where: {
+          chatId,
+          deleteForEveryone: false,
+          messageActive: true,
+          createdAt: { [Op.gt]: lastSeenMessage.createdAt },
+        },
+        order: [["createdAt", "ASC"]],
+        attributes: [
+          "id",
+          "mediaUrl",
+          "content",
+          "messageType",
+          "overallStatus",
+          "senderId",
+          "createdAt",
+          [
+            Sequelize.literal(`(
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN 'skrolls.user'
+                ELSE username
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Messages.senderId
+          )`),
+            "username",
+          ],
+
+          [
+            Sequelize.literal(`(
+            SELECT 
+              CASE
+                WHEN (isActive = false OR citizenActive = false)
+                THEN NULL
+                ELSE profile_image
+              END
+            FROM repository.Users
+            WHERE repository.Users.id = Messages.senderId
+          )`),
+            "profilePhoto",
+          ],
+        ],
+        include: [
+          {
+            model: Messages,
+            as: "replyTo",
+            required: false,
+            where: { messageActive: true },
+            attributes: {
+              include: [
+                [
+                  Sequelize.literal(`(
+                  SELECT 
+                    CASE
+                      WHEN (isActive = false OR citizenActive = false)
+                      THEN 'skrolls.user'
+                      ELSE username
+                    END
+                  FROM repository.Users
+                  WHERE repository.Users.id = Messages.senderId
+                )`),
+                  "username",
+                ],
+
+                [
+                  Sequelize.literal(`(
+                  SELECT 
+                    CASE
+                      WHEN (isActive = false OR citizenActive = false)
+                      THEN NULL
+                      ELSE profile_image
+                    END
+                  FROM repository.Users
+                  WHERE repository.Users.id = Messages.senderId
+                )`),
+                  "profilePhoto",
+                ],
+              ],
+            },
+          },
+        ],
+      });
+
+      const validMessages = await Promise.all(
+        newMessages.map(async (message) => {
+          const deletedMessage = await DeletedMessages.findOne({
+            where: {
+              userId,
+              messageId: message.id,
+            },
+          });
+          return deletedMessage ? null : message;
+        })
+      ).then((messages) => messages.filter((message) => message !== null));
+
+      socket.emit("newMessages", {
+        messages: validMessages,
+      });
+    } catch (error) {
+      socket.emit("error", "Failed to fetch new chat messages.");
     }
   };
 
