@@ -33,7 +33,7 @@ exports.messageReceived =
       await transaction.commit();
 
       // Optionally notify others in the chat
-      io.to(userId).emit("messageStatusUpdate", {
+      socket.emit("messageStatusUpdate", {
         messageId,
         userId,
         status: "received",
@@ -70,7 +70,7 @@ exports.messageRead =
 
       await transaction.commit();
 
-      io.to(userId).emit("messageStatusUpdate", {
+      socket.emit("messageStatusUpdate", {
         messageId,
         userId,
         status: "read",

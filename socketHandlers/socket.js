@@ -34,6 +34,8 @@ module.exports = (io, socket) => {
 
   socket.on("getMessages", messageHandlers.getMessages(io, socket));
 
+  socket.on("getNewMessages", messageHandlers.getNewMessages(io, socket));
+
   //messageStatuses section
   socket.on(
     "messageReceived",

@@ -221,7 +221,7 @@ exports.createChat =
             )
         );
 
-        io.to(chat.id).emit("newMessage", message);
+        socket.emit("newMessages", message);
       }
 
       await skrollsTransaction.commit();
@@ -398,8 +398,8 @@ exports.updateChat =
       await skrollsTransaction.commit();
       await repositoryTransaction.commit();
 
-      io.to(chatId).emit("chatUpdated", updatedChat);
-      io.to(chatId).emit("newMessage", updateMessage);
+      socket.emit("chatUpdated", updatedChat);
+      socket.emit("newMessages", updateMessage);
     } catch (error) {
       await skrollsTransaction.rollback();
       await repositoryTransaction.rollback();
@@ -527,7 +527,7 @@ exports.getUserConversations =
           {
             model: Messages,
             where: {
-              messageType: "regular",
+              // messageType: "regular",
               messageActive: true,
             },
             attributes: [

@@ -132,7 +132,7 @@ exports.addMemberToChat =
       await skrollsTransaction.commit();
       await repositoryTransaction.commit();
 
-      io.to(chatId).emit("memberAdded", {
+      socket.emit("memberAdded", {
         chatId,
         userId,
         addedBy,
