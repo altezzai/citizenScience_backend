@@ -33,7 +33,7 @@ app.use(auth);
 
 app.use("/uploads", express.static("uploads"));
 app.use("/users", userRoutes);
-app.use("/admin", verifyAdmin, adminRoutes);
+app.use("/admin", adminRoutes);
 
 io.use(socketAuth);
 io.on("connection", (socket) => {

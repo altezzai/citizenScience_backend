@@ -9,7 +9,12 @@ const router = express.Router();
 router.get("/pendingFeeds", feedEditingController.getPendingFeeds);
 router.get("/feedDetails/:id", feedEditingController.getFeedDetails);
 router.get("/solvedFeeds", feedEditingController.getSolvedFeeds);
-router.put("/feeds/:feedId/addDescription",feedEditingController.addDescription);
+router.put(
+  "/feeds/:feedId/addDescription",
+  feedEditingController.addDescription
+);
+router.get("/searchPendingFeeds", feedEditingController.searchPendingFeeds);
+router.get("/searchSolvedFeeds", feedEditingController.searchSolvedFeeds);
 
 router.get("/contents", contentManagementController.getContents);
 
