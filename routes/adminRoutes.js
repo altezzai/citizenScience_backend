@@ -17,6 +17,7 @@ router.get("/searchPendingFeeds", feedEditingController.searchPendingFeeds);
 router.get("/searchSolvedFeeds", feedEditingController.searchSolvedFeeds);
 
 router.get("/contents", contentManagementController.getContents);
+router.delete("/content/:id", contentManagementController.deleteContent);
 
 router.get("/getReports", contentModerationController.getReports);
 router.get("/viewReport", contentModerationController.viewReport);

@@ -765,7 +765,7 @@ exports.getChatDetails =
         return;
       }
 
-      const members = await ChatMembers.findAll({
+      const { count, rows: members } = await ChatMembers.findAndCountAll({
         where: { chatId },
         attributes: {
           include: [
@@ -814,6 +814,7 @@ exports.getChatDetails =
         chatIcon: chat.icon,
         chatDescription: chat.description,
         members: memberDetails,
+        totalMembers: count,
       });
     } catch (error) {
       console.error("Error fetching chat details:", error);
