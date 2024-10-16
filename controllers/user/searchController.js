@@ -203,7 +203,7 @@ const searchFeedHashtags = async (req, res) => {
 const searchHashtags = async (req, res) => {
   const searchQuery = req.query.q.toLowerCase();
   const page = parseInt(req.query.page) || 1;
-  const limit = 20;
+  const limit = parseInt(req.query.limit) || 20;
   const offset = (page - 1) * limit;
 
   try {
